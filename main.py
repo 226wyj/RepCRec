@@ -1,6 +1,6 @@
 import argparse
 
-from transaction.transaction_manager import TransactionManager
+from transaction.manager import TransactionManager
 
 
 def main(args):
