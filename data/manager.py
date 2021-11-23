@@ -1,6 +1,6 @@
 from collections import defaultdict, deque
 from lock import LockManager
-from value import Value, CommitValue, TemporaryValue
+from value import Value, CommitValue, TemporaryValue, ReadResult
 
 
 class Variable:
@@ -70,3 +70,18 @@ class DataManager:
         for v in self.data.values():
             if v.is_replicated:
                 v.is_readable = False
+
+    def snapshot_read(self, vid, timestamp):
+        v = self.data[vid]
+        if v.is_readable:
+            for commit_value in v.commit_value_list:
+                if commit_value.commit_time <= timestamp:
+                    if v.is_replicated:
+                        # If the site wasn't up all the time between
+                        # the time when xi was committed and RO began,
+                        # then this RO can abort.
+                        for t in self.fail_timestamp:
+                            if commit_value < t <= timestamp:
+                                return ReadResult(None, False)
+                    return ReadResult(commit_value.value, True)
+        return ReadResult(None, False)
