@@ -9,7 +9,7 @@ class Variable:
         self.init_value = init
         self.is_replicated = is_replicated
         self.is_readable = True
-
+        # initialize commit_value_list with the init_value
         self.commit_value_list.append(self.init_value)
 
     def get_last_commit_value(self):
