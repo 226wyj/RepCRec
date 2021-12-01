@@ -1,5 +1,5 @@
 from collections import defaultdict, deque
-from parser import Parser
+from transaction.parser import Parser
 from transaction.transaction import Transaction
 from data.manager import DataManager
 

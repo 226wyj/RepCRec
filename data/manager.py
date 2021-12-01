@@ -1,7 +1,7 @@
 from collections import defaultdict, deque
-from lock import LockManager, LockType
-from variable import Variable
-from value import CommitValue, TemporaryValue, ReadResult
+from data.lock import LockManager, LockType
+from data.variable import Variable
+from data.value import CommitValue, TemporaryValue, ReadResult
 
 
 class DataManager:
@@ -84,4 +84,6 @@ class DataManager:
                 if current_lock.lock_type == LockType.R:
                     if tid in current_lock.tid_set:
                         return ReadResult(v.get_last_commit_value(), True)
-                    
+
+            return ReadResult(True, v.get_last_commit_value())
+
