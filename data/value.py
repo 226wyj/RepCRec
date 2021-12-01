@@ -10,12 +10,12 @@ class TemporaryValue(Value):
 
 
 class CommitValue(Value):
-    def __init__(self, v, commit_time):
+    def __init__(self, v, commit_time: int):
         super(CommitValue, self).__init__(v)
         self.commit_time = commit_time
 
 
 class ReadResult(Value):
-    def __init__(self, v, is_success):
+    def __init__(self, v, is_success: bool):
         super(ReadResult, self).__init__(v)
         self.is_success = is_success

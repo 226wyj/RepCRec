@@ -1,11 +1,11 @@
 from collections import defaultdict, deque
-from lock import LockManager
+from lock import LockManager, LockType
 from variable import Variable
 from value import CommitValue, TemporaryValue, ReadResult
 
 
 class DataManager:
-    def __init__(self, sid):
+    def __init__(self, sid: int) -> None:
         self.sid = sid
         self.is_up = True
         self.data = defaultdict()
@@ -39,12 +39,13 @@ class DataManager:
     def has_variable(self, vid: str) -> bool:
         return False if vid not in self.data else True
 
-    def fail(self, sid):
+    def fail(self, timestamp: int) -> None:
         """ Set the `is_up` state to false and clear the lock table. """
         self.is_up = False
+        self.fail_timestamp.append(timestamp)
         self.lock_table.clear()
 
-    def recover(self, timestamp):
+    def recover(self, timestamp: int) -> None:
         """
         Record the recover timestamp, and set
         all the replicated variable's state to unreadable.
@@ -55,9 +56,11 @@ class DataManager:
             if v.is_replicated:
                 v.is_readable = False
 
-    def snapshot_read(self, vid, timestamp):
-        v = self.data[vid]
-        if v.is_readable:
+    def snapshot_read(self, vid: str, timestamp: int) -> ReadResult:
+        v: Variable = self.data[vid]
+        if not v.is_readable:
+            return ReadResult(None, False)
+        else:
             for commit_value in v.commit_value_list:
                 if commit_value.commit_time <= timestamp:
                     if v.is_replicated:
@@ -68,4 +71,17 @@ class DataManager:
                             if commit_value < t <= timestamp:
                                 return ReadResult(None, False)
                     return ReadResult(commit_value.value, True)
-        return ReadResult(None, False)
+            return ReadResult(None, False)
+
+    def read(self, tid: str, vid: str) -> ReadResult:
+        v: Variable = self.data[vid]
+        if not v.is_readable:
+            return ReadResult(None, False)
+        else:
+            lock_manager: LockManager = self.lock_table[vid]
+            current_lock = lock_manager.current_lock
+            if current_lock:
+                if current_lock.lock_type == LockType.R:
+                    if tid in current_lock.tid_set:
+                        return ReadResult(v.get_last_commit_value(), True)
+                    
