@@ -89,7 +89,7 @@ class LockManager:
             # If the same transaction has lock in queue, then there are two possibilities:
             # (1) R lock in queue and W new lock;
             # (2) W lock in queue and R new lock;
-            # If the new lock is W type, then return.
+            # If the new lock is R type, then return.
             return
         else:
             self.lock_queue.append(lock)
