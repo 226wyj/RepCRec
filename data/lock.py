@@ -67,14 +67,36 @@ class LockManager:
     def release_current_lock(self, tid: str) -> None:
         if self.current_lock:
             if self.current_lock.lock_type == LockType.R:
-                self.shared_read_lock.remove(tid)
-            self.current_lock = None
+                if tid in self.shared_read_lock:
+                    self.shared_read_lock.remove(tid)
+                    if len(self.shared_read_lock) == 0:
+                        self.current_lock = None
+            else:
+                if self.current_lock.tid == tid:
+                    self.current_lock = None
 
     def add_lock_to_queue(self, lock) -> None:
+        """ Only blocked locks are added to the queue. """
         if lock in self.lock_queue:
             return
-        for l in self.lock_queue:
-            if l.tid == lock.tid:
-                if l.lock_type == LockType.R:
-
+        if lock.lock_type == LockType.R:
+            self.shared_read_lock.add(lock.tid)
         self.lock_queue.append(lock)
+
+    def set_current_lock(self, lock):
+        if lock.lock_type == LockType.R:
+            self.shared_read_lock.add(lock.tid)
+        self.current_lock = lock
+
+    def has_write_lock(self):
+        for lock in self.lock_queue:
+            if lock.lock_type == LockType.W:
+                return True
+        return False
+
+    def has_other_write_lock(self, tid):
+        for lock in self.lock_queue:
+            if lock.lock_type == LockType.W:
+                if lock.tid != tid:
+                    return True
+        return False

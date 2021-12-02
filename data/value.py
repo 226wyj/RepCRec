@@ -15,7 +15,7 @@ class CommitValue(Value):
         self.commit_time = commit_time
 
 
-class ReadResult(Value):
+class ResultValue(Value):
     def __init__(self, v, is_success: bool):
-        super(ReadResult, self).__init__(v)
+        super(ResultValue, self).__init__(v)
         self.is_success = is_success
