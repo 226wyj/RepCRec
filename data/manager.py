@@ -6,13 +6,14 @@ from data.value import CommitValue, TemporaryValue, ResultValue
 
 class DataManager:
     def __init__(self, sid: int) -> None:
-        self.sid = sid                      # site id
-        self.is_up = True
-        self.data = defaultdict()
-        self.lock_table = defaultdict()     # lock managers for each variable
-        self.fail_timestamp = []
-        self.recover_timestamp = []
+        self.sid = sid  # site id
+        self.is_up = True  # whether the site is down or not
+        self.data = defaultdict()  # all the variables stored in the site
+        self.lock_table = defaultdict()  # lock managers for each variable
+        self.fail_timestamp = []  # record all the fail time of this site
+        self.recover_timestamp = []  # record all the recover time of this site
 
+        # initialize variables
         for i in range(1, 21):
             vid = 'x{}'.format(i)
             init_val = i * 10
@@ -37,24 +38,7 @@ class DataManager:
                 self.lock_table[vid] = LockManager(vid)
 
     def has_variable(self, vid: str) -> bool:
-        return False if vid not in self.data else True
-
-    def fail(self, timestamp: int) -> None:
-        """ Set the `is_up` state to false and clear the lock table. """
-        self.is_up = False
-        self.fail_timestamp.append(timestamp)
-        self.lock_table.clear()
-
-    def recover(self, timestamp: int) -> None:
-        """
-        Record the recover timestamp, and set
-        all the replicated variable's state to unreadable.
-        """
-        self.is_up = True
-        self.recover_timestamp.append(timestamp)
-        for v in self.data.values():
-            if v.is_replicated:
-                v.is_readable = False
+        return True if vid in self.data else False
 
     def snapshot_read(self, vid: str, timestamp: int) -> ResultValue:
         """ Return the snapshot value for read-only transactions. """
@@ -168,4 +152,67 @@ class DataManager:
                 raise "ERROR, current lock is not the write lock of transaction {}.".format(tid)
 
     def dump(self):
-        pass
+        site_status = 'up' if self.is_up else 'down'
+        output = 'site {} [{}] - '.format(self.sid, site_status)
+        for v in self.data.values():
+            output += '{}: {}, '.format(v.vid, v.get_last_commit_value())
+        print(output)
+
+    def abort(self, tid):
+        for lock_manager in self.lock_table.values():
+            lock_manager.release_current_lock(tid)
+            lock_manager.remove_lock_from_queue(tid)
+        self.update_lock_table()
+
+    def commit(self, tid, commit_time):
+        # Release locks.
+        for lock_manager in self.lock_table.values():
+            lock_manager.release_current_lock(tid)
+        # Commit temporary values.
+        for v in self.data.values():
+            if v.temporary_value is not None and v.temporary_value.tid == tid:
+                commit_value = v.temporary_value.value
+                v.add_commit_value(CommitValue(commit_value, commit_time))
+                v.temporary_value = None
+                v.is_readable = True
+        self.update_lock_table()
+
+    def update_lock_table(self):
+        for lock_manager in self.lock_table.values():
+            if len(lock_manager.lock_queue) == 0:
+                continue
+            if lock_manager.current_lock is None:
+                first_waiting = lock_manager.lock_queue.popleft()
+                lock_manager.set_current_lock(first_waiting)
+                if first_waiting.lock_type == LockType.R:
+                    # If multiple read locks are blocked before a write lock, then
+                    # pop these read locks out of the queue and make them share the read lock.
+                    next_lock = lock_manager.lock_queue.popleft()
+                    while next_lock.lock_type == LockType.R:
+                        lock_manager.shared_read_lock.add(next_lock.tid)
+                        next_lock = lock_manager.lock_queue.popleft()
+                    lock_manager.lock_queue.appendleft(next_lock)
+
+                    # If the current lock is a read lock, and the next lock is the write lock
+                    # of the same transaction, then promote the current read lock.
+                    if len(lock_manager.shared_read_lock) == 1 and \
+                            next_lock.tid == lock_manager.shared_read_lock[0]:
+                        lock_manager.promote_current_lock(WriteLock(lock_manager.vid, next_lock.tid))
+                        lock_manager.lock_queue.popleft()
+
+    def fail(self, timestamp: int) -> None:
+        """ Set the `is_up` state to false and clear the lock table. """
+        self.is_up = False
+        self.fail_timestamp.append(timestamp)
+        self.lock_table.clear()
+
+    def recover(self, timestamp: int) -> None:
+        """
+        Record the recover timestamp, and set
+        all the replicated variable's state to unreadable.
+        """
+        self.is_up = True
+        self.recover_timestamp.append(timestamp)
+        for v in self.data.values():
+            if v.is_replicated:
+                v.is_readable = False

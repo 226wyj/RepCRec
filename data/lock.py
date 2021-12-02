@@ -31,7 +31,7 @@ class LockManager:
         self.vid = vid
         self.current_lock = None
         self.lock_queue = deque()
-        self.shared_read_lock = set()
+        self.shared_read_lock = deque()
 
     def promote_current_lock(self, write_lock: WriteLock) -> None:
         if not self.current_lock:
@@ -54,8 +54,8 @@ class LockManager:
         self.shared_read_lock.clear()
 
     def share_current_lock(self, tid: str):
-        if self.current_lock.lock_type == LockType.R:
-            self.shared_read_lock.add(tid)
+        if self.current_lock.lock_type == LockType.R and tid not in self.shared_read_lock:
+            self.shared_read_lock.append(tid)
         else:
             raise "ERROR[4]: Transaction {}'s current lock on variable {} " \
                   "is a write lock, which can not be shared."\
@@ -65,27 +65,42 @@ class LockManager:
                 )
 
     def release_current_lock(self, tid: str) -> None:
-        if self.current_lock:
+        """ Release current lock, and update shared lock lists if needed. """
+        if self.current_lock and self.current_lock.tid == tid:
             if self.current_lock.lock_type == LockType.R:
-                if tid in self.shared_read_lock:
-                    self.shared_read_lock.remove(tid)
-                    if len(self.shared_read_lock) == 0:
-                        self.current_lock = None
-            else:
-                if self.current_lock.tid == tid:
+                self.shared_read_lock.remove(tid)
+                if len(self.shared_read_lock) == 0:
+                    # If there is no shared read locks, then set current lock to None.
                     self.current_lock = None
+                else:
+                    # Otherwise, let the next shared read lock be the current lock
+                    # according to the first-come-first-serve rule.
+                    self.current_lock = ReadLock(self.vid, self.shared_read_lock[0])
+            else:
+                self.current_lock = None
 
     def add_lock_to_queue(self, lock) -> None:
         """ Only blocked locks are added to the queue. """
+        all_queued_tid = [lock.tid for lock in self.lock_queue]
         if lock in self.lock_queue:
+            # If the same kind of lock has already been in the queue, then return.
             return
-        if lock.lock_type == LockType.R:
-            self.shared_read_lock.add(lock.tid)
-        self.lock_queue.append(lock)
+        elif lock.tid in all_queued_tid and lock.lock_type == LockType.R:
+            # If the same transaction has lock in queue, then there are two possibilities:
+            # (1) R lock in queue and W new lock;
+            # (2) W lock in queue and R new lock;
+            # If the new lock is W type, then return.
+            return
+        else:
+            self.lock_queue.append(lock)
+
+    def remove_lock_from_queue(self, tid) -> None:
+        """ Remove all the lock whose tid is equal to the given tid. """
+        self.lock_queue = deque([lock for lock in self.lock_queue if lock.tid != tid])
 
     def set_current_lock(self, lock):
         if lock.lock_type == LockType.R:
-            self.shared_read_lock.add(lock.tid)
+            self.shared_read_lock.append(lock.tid)
         self.current_lock = lock
 
     def has_write_lock(self):
