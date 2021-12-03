@@ -20,3 +20,10 @@ class Parser:
                       "within [begin, end, W, R, dump, beginRO, fail, recover]," \
                       "please check.".format(cmd)
             return res
+
+
+# Test code
+# if __name__ == '__main__':
+#     parser = Parser()
+#     while (command := input('> ')) != 'exit':
+#         print(parser.parse(command))

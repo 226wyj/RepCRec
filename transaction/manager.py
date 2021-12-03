@@ -16,18 +16,18 @@ class TransactionManager:
 
     def process(self, s: str) -> None:
         arguments = self.parser.parse(s)
-        cmd = arguments.pop(0)
+        cmd = arguments[0]
 
         if cmd == 'begin':
             self.begin(arguments)
-        elif cmd == 'begin_ro':
+        elif cmd == 'beginRO':
             self.begin_ro(arguments)
         elif cmd == 'end':
             self.end(arguments)
         elif cmd == 'W':
-            self.w(arguments)
+            self.write(arguments)
         elif cmd == 'R':
-            self.r(arguments)
+            self.read(arguments)
         elif cmd == 'dump':
             self.dump(arguments)
         elif cmd == 'fail':
@@ -39,7 +39,7 @@ class TransactionManager:
         self.timestamp += 1
 
     def begin(self, arguments):
-        tid = arguments[0]
+        tid = arguments[1]
         if tid in self.transactions:
             raise "Transaction {} has already begun.".format(tid)
         transaction = Transaction(tid, self.timestamp, False)
@@ -47,7 +47,7 @@ class TransactionManager:
         print('Transaction {} begins.'.format(tid))
 
     def begin_ro(self, arguments):
-        tid = arguments[0]
+        tid = arguments[1]
         if tid in self.transactions:
             raise "Transaction {} has already begun.".format(tid)
         transaction = Transaction(tid, self.timestamp, True)
@@ -55,7 +55,7 @@ class TransactionManager:
         print('Read-only transaction {} begins.'.format(tid))
 
     def end(self, arguments):
-        tid = arguments[0]
+        tid = arguments[1]
         if tid not in self.transactions:
             raise "Transaction {} doesn't exist.".format(tid)
         if self.transactions[tid].is_abort:
@@ -64,10 +64,14 @@ class TransactionManager:
             self.commit(tid, self.timestamp)
         pass
 
-    def w(self, arguments):
-        pass
+    def snapshot_read(self, tid, vid):
+        trans: Transaction = self.transactions.get(tid)
+        if not trans:
+            raise "ERROR, Transaction {} doesn't exist.".format(tid)
+        timestamp = trans.timestamp
 
-    def r(self, arguments):
+
+    def read(self, arguments):
         tid = arguments[0]
         if tid not in self.transactions:
             raise "Transaction {} hasn't begun, its read operation fails.".format(tid)
@@ -78,10 +82,16 @@ class TransactionManager:
                 pass
         pass
 
+    def write(self, arguments):
+        pass
+
+
+
     def dump(self, arguments):
         pass
 
-    def fail(self, sid):
+    def fail(self, arguments):
+        sid = int(arguments[1])
         site = self.sites[sid - 1]
         if not site.is_up:
             raise "Site {} has already down.".format(sid)
