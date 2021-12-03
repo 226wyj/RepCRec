@@ -3,12 +3,12 @@ import argparse
 from transaction.manager import TransactionManager
 
 
-def main(args):
+def main(arguments):
     manager = TransactionManager()
-    if args.file and args.std:
+    if arguments.file and arguments.std:
         print("You can choose only one input method at one time."
               "The usage should be python main.py --file/--std")
-    elif args.file:
+    elif arguments.file:
         while True:
             print("Please input file path:")
             input_file = input('> ')

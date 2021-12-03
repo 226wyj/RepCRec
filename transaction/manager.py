@@ -56,48 +56,66 @@ class TransactionManager:
 
     def end(self, arguments):
         tid = arguments[1]
-        if tid not in self.transactions:
+        trans: Transaction = self.transactions.get(tid)
+        if not trans:
             raise "Transaction {} doesn't exist.".format(tid)
-        if self.transactions[tid].is_abort:
+        if trans.is_abort:
             self.abort(tid)
         else:
             self.commit(tid, self.timestamp)
-        pass
 
     def snapshot_read(self, tid, vid):
         trans: Transaction = self.transactions.get(tid)
         if not trans:
             raise "ERROR, Transaction {} doesn't exist.".format(tid)
         timestamp = trans.timestamp
-
-
-    def read(self, arguments):
-        tid = arguments[0]
-        if tid not in self.transactions:
-            raise "Transaction {} hasn't begun, its read operation fails.".format(tid)
-
-        vid = arguments[1]
         for site in self.sites:
             if site.is_up and site.has_variable(vid):
-                pass
-        pass
+                result_value = site.snapshot_read(vid, timestamp)
+                if result_value.is_success:
+                    print('Read-only transaction {} reads {} from {}: {}'.format(
+                        tid, vid, site.sid, result_value.value))
+                    return True
+        return False
+
+    def read(self, arguments):
+        tid = arguments[1]
+        trans: Transaction = self.transactions.get(tid)
+        if not trans:
+            raise "Transaction {} hasn't begun, read operation fails.".format(tid)
+        vid = arguments[2]
+        for site in self.sites:
+            if site.is_up and site.has_variable(vid):
+                result_value = site.read(vid, tid)
+                if result_value.is_success:
+                    trans.visited_sites.append(site.sid)
+                    print('Normal read transaction {} reads {} from {}: {}'.format(
+                        tid, vid, site.sid, result_value.value))
+                    return True
+        return False
 
     def write(self, arguments):
         pass
 
-
-
     def dump(self, arguments):
-        pass
+        print("Dump Operation:")
+        for site in self.sites:
+            site.dump()
 
     def fail(self, arguments):
         sid = int(arguments[1])
+
+        # site id starts from 1, while the index of self.sites starts from 0.
         site = self.sites[sid - 1]
         if not site.is_up:
             raise "Site {} has already down.".format(sid)
         site.fail(sid)
-
-        pass
+        print("Site {} fails.".format(sid))
+        for trans in self.transactions.values():
+            if trans.is_ro or trans.is_abort or (sid not in trans.visited_sites):
+                continue
+            else:
+                trans.is_abort = True
 
     def recover(self, arguments):
         pass
@@ -105,8 +123,12 @@ class TransactionManager:
     def execute_operations(self):
         pass
 
-    def abort(self, tid: str):
-        pass
+    def abort(self, tid: str, site_fail=False):
+        for site in self.sites:
+            site.abort(tid)
+        del self.transactions[tid]
+        abort_reason = 'Site Fail' if site_fail else 'Deadlock'
+        print('Abort transaction {} because of: {}'.format(tid, abort_reason))
 
     def commit(self, tid, commit_time):
         pass
