@@ -6,6 +6,7 @@ from transaction.deadlock_detector import DeadlockDetector
 from transaction.operation import OperationType, ReadOperation, WriteOperation
 from transaction.parser import Parser
 from transaction.transaction import Transaction
+from errors import TransactionError
 
 
 class TransactionManager:
@@ -90,7 +91,7 @@ class TransactionManager:
     def begin(self, arguments):
         tid = arguments[1]
         if tid in self.transactions:
-            raise "Transaction {} has already begun.".format(tid)
+            raise TransactionError("Transaction {} has already begun.".format(tid))
         transaction = Transaction(tid, self.timestamp, False)
         self.transactions[tid] = transaction
         print('Transaction {} begins.'.format(tid))
@@ -98,7 +99,7 @@ class TransactionManager:
     def begin_ro(self, arguments):
         tid = arguments[1]
         if tid in self.transactions:
-            raise "Transaction {} has already begun.".format(tid)
+            raise TransactionError("Transaction {} has already begun.".format(tid))
         transaction = Transaction(tid, self.timestamp, True)
         self.transactions[tid] = transaction
         print('Read-only transaction {} begins.'.format(tid))
@@ -116,7 +117,7 @@ class TransactionManager:
     def snapshot_read(self, tid, vid):
         trans: Transaction = self.transactions.get(tid)
         if not trans:
-            raise "ERROR, Transaction {} doesn't exist.".format(tid)
+            raise TransactionError("Transaction {} doesn't exist.".format(tid))
         timestamp = trans.timestamp
         for site in self.sites:
             if site.is_up and site.has_variable(vid):
@@ -130,19 +131,19 @@ class TransactionManager:
     def add_read_operation(self, tid, vid):
         trans = self.transactions.get(tid)
         if not trans:
-            raise "Transaction {} doesn't exist, can't add read operation.".format(tid)
+            raise TransactionError("Transaction {} doesn't exist, can't add read operation.".format(tid))
         self.operations.append(ReadOperation(tid, vid))
 
     def add_write_operation(self, tid, vid, value):
         trans = self.transactions.get(tid)
         if not trans:
-            raise "Transaction {} doesn't exist, can't add write operation.".format(tid)
+            raise TransactionError("Transaction {} doesn't exist, can't add write operation.".format(tid))
         self.operations.append(WriteOperation(tid, vid, value))
 
     def read(self, tid, vid):
         trans: Transaction = self.transactions.get(tid)
         if not trans:
-            raise "Transaction {} hasn't begun, read operation fails.".format(tid)
+            raise TransactionError("Transaction {} hasn't begun, read operation fails.".format(tid))
         for site in self.sites:
             if site.is_up and site.has_variable(vid):
                 result_value = site.read(tid, vid)
@@ -156,7 +157,7 @@ class TransactionManager:
     def write(self, tid, vid, value) -> bool:
         trans = self.transactions.get(tid)
         if not trans:
-            raise "Transaction {} hasn't begun, write operation fails.".format(tid)
+            raise TransactionError("Transaction {} hasn't begun, write operation fails.".format(tid))
         target_sites = []
         for site in self.sites:
             if site.has_variable(vid):
@@ -202,7 +203,7 @@ class TransactionManager:
         # site id starts from 1, while the index of self.sites starts from 0.
         site = self.sites[sid - 1]
         if not site.is_up:
-            raise "Site {} has already down.".format(sid)
+            raise TransactionError("Site {} has already down.".format(sid))
         site.fail(sid)
         print("Site {} fails.".format(sid))
         for trans in self.transactions.values():
