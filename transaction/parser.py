@@ -8,13 +8,19 @@ class Parser:
             'begin', 'end', 'W', 'R',
             'dump', 'beginRO', 'fail', 'recover'
         }
+        self.is_output_message = False
 
-    def parse(self, line: str) -> List[str]:
+    def parse(self, line: str):
         # print("Current line: ")
         # print(line)
+        if self.is_output_message:
+            return
         line = line.strip()
         is_valid = (line.split('//')[0].strip() != '')
         if is_valid:
+            if line.startswith('==='):
+                self.is_output_message = True
+                return
             res = re.findall(r'\w+', line)
             print(res)
             cmd = res[0]
