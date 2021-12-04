@@ -115,3 +115,15 @@ class LockManager:
                 if lock.tid != tid:
                     return True
         return False
+
+
+def is_conflict(lock1, lock2) -> bool:
+    """
+    To judge if lock1 conflicts with lock2.
+    (1) R lock conflicts with W lock.
+    (2) W lock conflicts with R lock and W lock.
+    """
+    if lock1.lock_type == LockType.R and lock2.lock_type == LockType.R:
+        return False
+    else:
+        return True if lock1.tid != lock2.tid else False

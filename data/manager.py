@@ -1,8 +1,9 @@
 from collections import defaultdict
 
-from data.lock import ReadLock, WriteLock, LockManager, LockType
+from data.lock import ReadLock, WriteLock, LockManager, LockType, is_conflict
 from data.value import CommitValue, TemporaryValue, ResultValue
 from data.variable import Variable
+from errors import DataError
 
 
 class DataManager:
@@ -149,7 +150,7 @@ class DataManager:
                    current_lock.vid == vid and current_lock.lock_type == LockType.W
             v.temporary_value = TemporaryValue(value, tid)
         except Exception:
-            raise "ERROR, current lock is not the write lock of transaction {}.".format(tid)
+            raise DataError("current lock is not the write lock of transaction {}.".format(tid))
 
     def dump(self):
         site_status = 'up' if self.is_up else 'down'
@@ -217,13 +218,6 @@ class DataManager:
             if v.is_replicated:
                 v.is_readable = False
 
-    def __is_conflict(self, lock1, lock2) -> bool:
-        """ To judge if lock1 conflicts with lock2. """
-        if lock1.lock_type == LockType.R and lock2.lock_type == LockType.R:
-            return False
-        else:
-            return True if lock1.tid != lock2.tid else False
-
     def generate_blocking_graph(self) -> defaultdict:
         blocking_graph = defaultdict(set)
         for lock_manager in self.lock_table.values():
@@ -233,7 +227,7 @@ class DataManager:
             # Generate lock graph for the current lock with other locks in queue.
             current_lock = lock_manager.current_lock
             for lock in lock_manager.lock_queue:
-                if self.__is_conflict(current_lock, lock):
+                if is_conflict(current_lock, lock):
                     # If current lock is a read lock, then all the other transactions
                     # that share the same read lock would be conflicted with the write
                     # lock in queue.
@@ -252,6 +246,6 @@ class DataManager:
                 lock1 = lock_manager.lock_queue[i]
                 for j in range(i):
                     lock2 = lock_manager.lock_queue[j]
-                    if self.__is_conflict(lock2, lock1):
+                    if is_conflict(lock2, lock1):
                         blocking_graph[lock1.tid].add(lock2.tid)
         return blocking_graph
