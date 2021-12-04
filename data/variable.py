@@ -13,7 +13,7 @@ class Variable:
         self.commit_value_list.append(self.init_value)
 
     def get_last_commit_value(self):
-        return self.commit_value_list[-1]
+        return self.commit_value_list[-1].value
 
     def add_commit_value(self, v):
         self.commit_value_list.append(v)

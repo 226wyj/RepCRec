@@ -17,11 +17,12 @@ def main(arguments):
                 with open(input_file, 'r') as f:
                     for line in f:
                         manager.process(line)
+                is_continue = input('Continue[y/n]?')
+                if is_continue.lower() == 'n':
+                    break
+                manager.reset_parser()
             except IOError:
                 print("Error, can not open " + input_file)
-            is_continue = input('Continue[y/n]?')
-            if is_continue.lower() == 'n':
-                break
     else:
         print("Standard input, use 'exit' to exit.")
         while True:

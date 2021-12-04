@@ -3,7 +3,7 @@ from typing import List
 
 from data.manager import DataManager
 from errors import TransactionError
-from transaction.deadlock_detector import DeadlockDetector
+from transaction.deadlock_detector import *
 from transaction.operation import OperationType, ReadOperation, WriteOperation
 from transaction.parser import Parser
 from transaction.transaction import Transaction
@@ -15,8 +15,8 @@ class TransactionManager:
         self.transactions = defaultdict()
         self.timestamp = 0
         self.operations = deque()
+
         self.sites = []
-        self.deadlock_detector = DeadlockDetector()
         for i in range(1, 11):
             self.sites.append(DataManager(i))
 
@@ -78,6 +78,9 @@ class TransactionManager:
             operation = self.operations[i]
             tid = operation.tid
             vid = operation.vid
+            # if not self.transactions.get(tid):
+            #     del self.operations[i]
+            # else:
             if operation.operation_type == OperationType.R:
                 is_success = self.snapshot_read(tid, vid) if self.transactions[tid].is_ro else self.read(tid, vid)
             else:
@@ -87,6 +90,9 @@ class TransactionManager:
                 del self.operations[i]
             else:
                 i += 1
+
+    def reset_parser(self):
+        self.parser.reset()
 
     def begin(self, arguments):
         tid = arguments[1]
@@ -192,7 +198,7 @@ class TransactionManager:
 
             target_site.write(tid, vid, value)
             self.transactions[tid].visited_sites.append(target_site.sid)
-        print("Transaction {} writes variable {} with value {} to sites {}."
+        print("Transaction {} finished writing variable {} with value {} to sites {}."
               .format(tid, vid, value, [site.sid for site in target_sites]))
         return True
 
@@ -231,16 +237,22 @@ class TransactionManager:
         del self.transactions[tid]
         abort_reason = 'Site Fail' if site_fail else 'Deadlock'
         print('Abort transaction {} because of: {}'.format(tid, abort_reason))
+        # Delete all the operations invoked by the aborted transaction.
+        for operation in list(self.operations):
+            if operation.tid == tid:
+                self.operations.remove(operation)
 
     def commit(self, tid, commit_time):
         for site in self.sites:
             site.commit(tid, commit_time)
-        del self.sites[tid]
+        self.transactions.pop(tid)
         print("Transaction {} commits at time {}.".format(tid, commit_time))
 
     def detect_deadlock(self) -> bool:
-        self.deadlock_detector.update_blocking_graph(self.sites)
-        victim = self.deadlock_detector.detect(self.transactions)
+        blocking_graph = generate_blocking_graph(self.sites)
+        victim = detect(self.transactions, blocking_graph)
+        # self.deadlock_detector.update_blocking_graph(self.sites)
+        # victim = self.deadlock_detector.detect(self.transactions)
         if victim is not None:
             print("Found deadlock, abort the youngest transaction {}".format(victim))
             self.abort(victim)

@@ -11,6 +11,9 @@ class Parser:
         }
         self.is_output_message = False
 
+    def reset(self):
+        self.is_output_message = False
+
     def parse(self, line: str):
         # print("Current line: ")
         # print(line)
