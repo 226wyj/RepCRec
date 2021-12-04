@@ -1,7 +1,8 @@
-from collections import defaultdict, deque
+from collections import defaultdict
+
 from data.lock import ReadLock, WriteLock, LockManager, LockType
-from data.variable import Variable
 from data.value import CommitValue, TemporaryValue, ResultValue
+from data.variable import Variable
 
 
 class DataManager:

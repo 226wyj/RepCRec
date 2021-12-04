@@ -1,10 +1,11 @@
 from collections import defaultdict, deque
+from typing import List
+
+from data.manager import DataManager
+from transaction.deadlock_detector import DeadlockDetector
+from transaction.operation import OperationType, ReadOperation, WriteOperation
 from transaction.parser import Parser
 from transaction.transaction import Transaction
-from data.manager import DataManager
-from transaction.operation import OperationType, ReadOperation, WriteOperation
-from transaction.deadlock_detector import DeadlockDetector
-from typing import List
 
 
 class TransactionManager:

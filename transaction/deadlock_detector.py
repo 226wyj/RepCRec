@@ -1,7 +1,7 @@
 from collections import defaultdict
 from typing import List
+
 from data.manager import DataManager
-from transaction.transaction import Transaction
 
 
 class DeadlockDetector:
