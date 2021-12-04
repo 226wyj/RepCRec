@@ -10,9 +10,13 @@ class Parser:
         }
 
     def parse(self, line: str) -> List[str]:
+        # print("Current line: ")
+        # print(line)
         line = line.strip()
-        if not line.startswith('\\'):
+        is_valid = (line.split('//')[0].strip() != '')
+        if is_valid:
             res = re.findall(r'\w+', line)
+            print(res)
             cmd = res[0]
             if cmd not in self.commands:
                 raise "Error, unknown command {}, the allowed command should be " \

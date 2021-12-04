@@ -26,7 +26,7 @@ class DeadlockDetector:
                     return True
         return False
 
-    def detect(self, transactions: defaultdict[Transaction]):
+    def detect(self, transactions):
         victim_timestamp = float('-inf')
         victim_tid = None
         for tid in self.blocking_graph.keys():

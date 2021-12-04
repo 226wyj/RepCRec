@@ -13,6 +13,7 @@ def main(arguments):
             print("Please input file path:")
             input_file = input('> ')
             try:
+                print("Getting inputs from {}".format(input_file))
                 with open(input_file, 'r') as f:
                     for line in f:
                         manager.process(line)

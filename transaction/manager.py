@@ -2,8 +2,8 @@ from collections import defaultdict, deque
 from transaction.parser import Parser
 from transaction.transaction import Transaction
 from data.manager import DataManager
-from operation import OperationType, ReadOperation, WriteOperation
-from deadlock_detector import DeadlockDetector
+from transaction.operation import OperationType, ReadOperation, WriteOperation
+from transaction.deadlock_detector import DeadlockDetector
 from typing import List
 
 
@@ -20,6 +20,10 @@ class TransactionManager:
 
     def process(self, s):
         arguments = self.parser.parse(s)
+        if not arguments:
+            return
+        # print('arguments: ')
+        # print(arguments)
         if self.detect_deadlock():
             self.execute_operations()
         self.process_command(arguments)
@@ -69,7 +73,7 @@ class TransactionManager:
     def execute_operations(self):
         i = 0
         while i < len(self.operations):
-            operation = self.operations.popleft()
+            operation = self.operations[i]
             tid = operation.tid
             vid = operation.vid
             if operation.operation_type == OperationType.R:
@@ -220,7 +224,7 @@ class TransactionManager:
     def detect_deadlock(self) -> bool:
         self.deadlock_detector.update_blocking_graph(self.sites)
         victim = self.deadlock_detector.detect(self.transactions)
-        if victim:
+        if victim is not None:
             print("Found deadlock, abort the youngest transaction {}".format(victim))
             self.abort(victim)
             return True
