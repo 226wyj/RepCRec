@@ -1,5 +1,7 @@
 import re
 
+from errors import ParseError
+
 
 class Parser:
     def __init__(self):
@@ -24,11 +26,11 @@ class Parser:
             print(res)
             cmd = res[0]
             if cmd not in self.commands:
-                raise "Error, unknown command {}, the allowed command should be " \
-                      "within [begin, end, W, R, dump, beginRO, fail, recover]," \
-                      "please check.".format(cmd)
+                raise ParseError(
+                    "Unknown command {}, the allowed command should be " \
+                    "within [begin, end, W, R, dump, beginRO, fail, recover]," \
+                    "please check.".format(cmd))
             return res
-
 
 # Test code
 # if __name__ == '__main__':
