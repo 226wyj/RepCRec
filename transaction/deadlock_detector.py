@@ -29,7 +29,9 @@ class DeadlockDetector:
     def detect(self, transactions):
         victim_timestamp = float('-inf')
         victim_tid = None
-        for tid in self.blocking_graph.keys():
+        # To avoid `RuntimeError: dictionary changed size during iteration`,
+        # we should use list() function or .copy() method.
+        for tid in list(self.blocking_graph.keys()):
             visited = defaultdict(bool)
             if self.has_cycle(tid, tid, visited):
                 if transactions[tid].timestamp > victim_timestamp:
