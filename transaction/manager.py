@@ -3,6 +3,8 @@ from transaction.parser import Parser
 from transaction.transaction import Transaction
 from data.manager import DataManager
 from operation import OperationType, ReadOperation, WriteOperation
+from deadlock_detector import DeadlockDetector
+from typing import List
 
 
 class TransactionManager:
@@ -12,11 +14,16 @@ class TransactionManager:
         self.timestamp = 0
         self.operations = deque()
         self.sites = []
+        self.deadlock_detector = DeadlockDetector()
         for i in range(1, 11):
             self.sites.append(DataManager(i))
 
-    def process(self, s: str) -> None:
+    def process(self, s):
         arguments = self.parser.parse(s)
+
+
+
+    def process_command(self, arguments: List[str]) -> None:
         cmd = arguments[0]
 
         if cmd == 'begin':
@@ -97,7 +104,7 @@ class TransactionManager:
         if not trans:
             raise "Transaction {} doesn't exist.".format(tid)
         if trans.is_abort:
-            self.abort(tid)
+            self.abort(tid, True)
         else:
             self.commit(tid, self.timestamp)
 
@@ -209,3 +216,12 @@ class TransactionManager:
             site.commit(tid, commit_time)
         del self.sites[tid]
         print("Transaction {} commits at time {}.".format(tid, commit_time))
+
+    def detect_deadlock(self) -> bool:
+        self.deadlock_detector.update_blocking_graph(self.sites, self.transactions)
+        victim = self.deadlock_detector.detect()
+        if victim:
+            print("Found deadlock, abort the youngest transaction {}".format(victim))
+            self.abort(victim)
+            return True
+        return False
