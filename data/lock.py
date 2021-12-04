@@ -8,20 +8,20 @@ class LockType(Enum):
 
 
 class Lock:
-    def __init__(self, vid: str, tid: str, lock_type: LockType) -> None:
-        self.vid = vid
-        self.tid = tid
-        self.lock_type = lock_type
+    def __init__(self, tid: str, vid: str, lock_type: LockType) -> None:
+        self.tid = tid              # transaction id
+        self.vid = vid              # variable id
+        self.lock_type = lock_type  # either R or W
 
 
 class ReadLock(Lock):
-    def __init__(self, vid: str, tid: str) -> None:
-        super(ReadLock, self).__init__(vid, tid, LockType.R)
+    def __init__(self, tid: str, vid: str) -> None:
+        super(ReadLock, self).__init__(tid, vid, LockType.R)
 
 
 class WriteLock(Lock):
-    def __init__(self, vid: str, tid: str) -> None:
-        super(WriteLock, self).__init__(vid, tid, LockType.W)
+    def __init__(self, tid: str, vid: str) -> None:
+        super(WriteLock, self).__init__(tid, vid, LockType.W)
 
 
 class LockManager:
