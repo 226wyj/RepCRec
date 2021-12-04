@@ -20,8 +20,11 @@ class TransactionManager:
 
     def process(self, s):
         arguments = self.parser.parse(s)
-
-
+        if self.detect_deadlock():
+            self.execute_operations()
+        self.process_command(arguments)
+        self.execute_operations()
+        self.timestamp += 1
 
     def process_command(self, arguments: List[str]) -> None:
         cmd = arguments[0]
@@ -62,9 +65,6 @@ class TransactionManager:
         else:
             assert len(arguments) == 2
             self.recover(arguments)
-
-        self.execute_operations()
-        self.timestamp += 1
 
     def execute_operations(self):
         i = 0
@@ -218,8 +218,8 @@ class TransactionManager:
         print("Transaction {} commits at time {}.".format(tid, commit_time))
 
     def detect_deadlock(self) -> bool:
-        self.deadlock_detector.update_blocking_graph(self.sites, self.transactions)
-        victim = self.deadlock_detector.detect()
+        self.deadlock_detector.update_blocking_graph(self.sites)
+        victim = self.deadlock_detector.detect(self.transactions)
         if victim:
             print("Found deadlock, abort the youngest transaction {}".format(victim))
             self.abort(victim)

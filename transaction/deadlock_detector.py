@@ -7,12 +7,8 @@ from transaction.transaction import Transaction
 class DeadlockDetector:
     def __init__(self):
         self.blocking_graph = defaultdict(set)
-        self.sites = None
-        self.transactions = None
 
-    def update_blocking_graph(self, sites: List[DataManager], transactions: defaultdict[Transaction]):
-        self.sites = sites
-        self.transactions = transactions
+    def update_blocking_graph(self, sites: List[DataManager]):
         for site in sites:
             if site.is_up:
                 graph = site.generate_blocking_graph()
@@ -30,14 +26,14 @@ class DeadlockDetector:
                     return True
         return False
 
-    def detect(self):
+    def detect(self, transactions: defaultdict[Transaction]):
         victim_timestamp = float('-inf')
         victim_tid = None
         for tid in self.blocking_graph.keys():
             visited = defaultdict(bool)
             if self.has_cycle(tid, tid, visited):
-                if self.transactions[tid].timestamp > victim_timestamp:
-                    victim_timestamp = self.transactions[tid].timestamp
+                if transactions[tid].timestamp > victim_timestamp:
+                    victim_timestamp = transactions[tid].timestamp
                     victim_tid = tid
         return victim_tid
 
