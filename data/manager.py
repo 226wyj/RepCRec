@@ -140,12 +140,12 @@ class DataManager:
     def write(self, tid, vid, value) -> None:
         lock_manager: LockManager = self.lock_table.get(vid)
         v: Variable = self.data.get(vid)
-
         assert lock_manager is not None and v is not None
 
         try:
             current_lock = lock_manager.current_lock
-            assert current_lock == WriteLock(tid, vid)
+            assert current_lock.tid == tid and \
+                   current_lock.vid == vid and current_lock.lock_type == LockType.W
             v.temporary_value = TemporaryValue(value, tid)
         except Exception:
             raise "ERROR, current lock is not the write lock of transaction {}.".format(tid)
