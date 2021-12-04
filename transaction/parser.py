@@ -13,7 +13,6 @@ class Parser:
         line = line.strip()
         if not line.startswith('\\'):
             res = re.findall(r'\w+', line)
-            print('Parse result of {}: {}'.format(line, res))
             cmd = res[0]
             if cmd not in self.commands:
                 raise "Error, unknown command {}, the allowed command should be " \

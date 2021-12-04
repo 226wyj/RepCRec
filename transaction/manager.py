@@ -36,13 +36,13 @@ class TransactionManager:
             tid = arguments[1]
             vid = arguments[2]
             value = arguments[3]
-            self.write(tid, vid, value)
+            self.add_write_operation(tid, vid, value)
 
         elif cmd == 'R':
             assert len(arguments) == 3
             tid = arguments[1]
             vid = arguments[2]
-            self.read(tid, vid)
+            self.add_read_operation(tid, vid)
 
         elif cmd == 'dump':
             assert len(arguments) == 1
@@ -59,28 +59,21 @@ class TransactionManager:
         self.execute_operations()
         self.timestamp += 1
 
-    def add_read_operation(self, tid, vid):
-        trans = self.transactions.get(tid)
-        if not trans:
-            raise "Transaction {} doesn't exist, can't add read operation.".format(tid)
-        self.operations.append(ReadOperation(tid, vid))
-
-    def add_write_operation(self, tid, vid, value):
-        trans = self.transactions.get(tid)
-        if not trans:
-            raise "Transaction {} doesn't exist, can't add write operation.".format(tid)
-        self.operations.append(WriteOperation(tid, vid, value))
-
     def execute_operations(self):
-        while self.operations:
+        i = 0
+        while i < len(self.operations):
             operation = self.operations.popleft()
-        # for operation in self.operations:
             tid = operation.tid
             vid = operation.vid
             if operation.operation_type == OperationType.R:
                 is_success = self.snapshot_read(tid, vid) if self.transactions[tid].is_ro else self.read(tid, vid)
             else:
                 is_success = self.write(tid, vid, operation.value)
+
+            if is_success:
+                del self.operations[i]
+            else:
+                i += 1
 
     def begin(self, arguments):
         tid = arguments[1]
@@ -121,6 +114,18 @@ class TransactionManager:
                         tid, vid, site.sid, result_value.value))
                     return True
         return False
+
+    def add_read_operation(self, tid, vid):
+        trans = self.transactions.get(tid)
+        if not trans:
+            raise "Transaction {} doesn't exist, can't add read operation.".format(tid)
+        self.operations.append(ReadOperation(tid, vid))
+
+    def add_write_operation(self, tid, vid, value):
+        trans = self.transactions.get(tid)
+        if not trans:
+            raise "Transaction {} doesn't exist, can't add write operation.".format(tid)
+        self.operations.append(WriteOperation(tid, vid, value))
 
     def read(self, tid, vid):
         trans: Transaction = self.transactions.get(tid)

@@ -1,5 +1,5 @@
 from collections import deque
-from value import Value
+from data.value import Value
 
 
 class Variable:
