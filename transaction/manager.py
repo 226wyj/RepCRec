@@ -1,7 +1,5 @@
-from collections import defaultdict, deque
-from typing import List
+from collections import deque
 
-from data.manager import DataManager
 from errors import TransactionError
 from transaction.deadlock_detector import *
 from transaction.operation import OperationType, ReadOperation, WriteOperation
@@ -78,9 +76,7 @@ class TransactionManager:
             operation = self.operations[i]
             tid = operation.tid
             vid = operation.vid
-            # if not self.transactions.get(tid):
-            #     del self.operations[i]
-            # else:
+
             if operation.operation_type == OperationType.R:
                 is_success = self.snapshot_read(tid, vid) if self.transactions[tid].is_ro else self.read(tid, vid)
             else:
