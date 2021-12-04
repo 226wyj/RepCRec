@@ -138,7 +138,7 @@ class DataManager:
                     return False
 
     def write(self, tid, vid, value) -> None:
-        lock_manager: LockManager = self.lock_table.get(tid)
+        lock_manager: LockManager = self.lock_table.get(vid)
         v: Variable = self.data.get(vid)
 
         assert lock_manager is not None and v is not None

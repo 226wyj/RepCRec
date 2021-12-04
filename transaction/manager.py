@@ -164,6 +164,7 @@ class TransactionManager:
                     continue
                 # If current site is up and has the certain vid, then try to get its write lock.
                 # The write operation can only be applied when got all the write locks of up sites.
+                print('tid: {}, vid: {}'.format(tid, vid))
                 write_lock = site.get_write_lock(tid, vid)
                 if not write_lock:
                     return False
@@ -173,7 +174,17 @@ class TransactionManager:
         if not target_sites:
             return False
         # Otherwise, write to all the up sites that contains the vid.
+        print('target sites:')
+        print(target_sites)
         for target_site in target_sites:
+            lock_table = target_site.lock_table
+            data = target_site.data
+            print('data:')
+            print(data)
+            lock_manager = lock_table.get(vid)
+            print('Current lock:')
+            print(lock_manager.current_lock)
+
             target_site.write(tid, vid, value)
             self.transactions[tid].visited_sites.append(target_site.sid)
         print("Transaction {} writes variable {} with value {} to sites {}.".format(tid, vid, value, target_sites))
