@@ -91,9 +91,6 @@ class TransactionManager:
             else:
                 i += 1
 
-    def reset_parser(self):
-        self.parser.reset()
-
     def begin(self, arguments):
         tid = arguments[1]
         if tid in self.transactions:

@@ -4,12 +4,12 @@ from transaction.manager import TransactionManager
 
 
 def main(arguments):
-    manager = TransactionManager()
     if arguments.file and arguments.std:
         print("You can choose only one input method at one time."
               "The usage should be python main.py --file/--std")
     elif arguments.file:
         while True:
+            manager = TransactionManager()
             print("Please input file path:")
             input_file = input('> ')
             try:
@@ -17,13 +17,13 @@ def main(arguments):
                 with open(input_file, 'r') as f:
                     for line in f:
                         manager.process(line)
-                is_continue = input('Continue[y/n]?')
+                is_continue = input('Continue[Y/n]?')
                 if is_continue.lower() == 'n':
                     break
-                manager.reset_parser()
             except IOError:
                 print("Error, can not open " + input_file)
     else:
+        manager = TransactionManager()
         print("Standard input, use 'exit' to exit.")
         while True:
             cmd = input('> ')
