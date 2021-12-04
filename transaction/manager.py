@@ -20,25 +20,40 @@ class TransactionManager:
         cmd = arguments[0]
 
         if cmd == 'begin':
+            assert len(arguments) == 2
             self.begin(arguments)
+
         elif cmd == 'beginRO':
+            assert len(arguments) == 2
             self.begin_ro(arguments)
+
         elif cmd == 'end':
+            assert len(arguments) == 2
             self.end(arguments)
+
         elif cmd == 'W':
+            assert len(arguments) == 4
             tid = arguments[1]
             vid = arguments[2]
             value = arguments[3]
             self.write(tid, vid, value)
+
         elif cmd == 'R':
+            assert len(arguments) == 3
             tid = arguments[1]
             vid = arguments[2]
             self.read(tid, vid)
+
         elif cmd == 'dump':
+            assert len(arguments) == 1
             self.dump()
+
         elif cmd == 'fail':
+            assert len(arguments) == 2
             self.fail(arguments)
+
         else:
+            assert len(arguments) == 2
             self.recover(arguments)
 
         self.execute_operations()
