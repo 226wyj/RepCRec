@@ -28,7 +28,8 @@ class TransactionManager:
         elif cmd == 'W':
             tid = arguments[1]
             vid = arguments[2]
-            self.write(tid, vid)
+            value = arguments[3]
+            self.write(tid, vid, value)
         elif cmd == 'R':
             tid = arguments[1]
             vid = arguments[2]
