@@ -62,6 +62,8 @@ class TransactionManager:
             self.dump()
 
         elif cmd == 'fail':
+            print(arguments)
+            print(len(arguments))
             assert len(arguments) == 2
             self.fail(arguments)
 
@@ -228,17 +230,9 @@ class TransactionManager:
             site.commit(tid, commit_time)
         self.transactions.pop(tid)
         print("Transaction {} commits at time {}.".format(tid, commit_time))
-        # for operation in list(self.operations):
-        #     if operation.tid == tid:
-        #         self.operations.remove(operation)
 
     def detect_deadlock(self) -> bool:
         blocking_graph = generate_blocking_graph(self.sites)
-
-        print('blocking graph: ')
-        print(blocking_graph)
-        print()
-
         victim = detect(self.transactions, blocking_graph)
         if victim is not None:
             print("Found deadlock, abort the youngest transaction {}".format(victim))

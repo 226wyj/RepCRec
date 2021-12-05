@@ -84,12 +84,6 @@ class LockManager:
                 if self.current_lock.tid == tid:
                     self.current_lock = None
 
-    def has_same_lock_in_queue(self, lock) -> bool:
-        for waited_lock in self.lock_queue:
-            if waited_lock.lock_type == lock.lock_type and waited_lock.tid == lock.tid:
-                return True
-        return False
-
     def add_lock_to_queue(self, lock) -> None:
         """ Only blocked locks are added to the queue. """
         for waited_lock in self.lock_queue:
@@ -110,8 +104,8 @@ class LockManager:
         #     return
         # else:
         #     self.lock_queue.append(lock)
-        print('Lock queue:', self.lock_queue)
-        print('Shared read lock: ', self.shared_read_lock)
+        # print('Lock queue:', self.lock_queue)
+        # print('Shared read lock: ', self.shared_read_lock)
 
     def remove_lock_from_queue(self, tid) -> None:
         """ Remove all the lock whose tid is equal to the given tid. """
