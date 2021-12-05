@@ -11,12 +11,7 @@ class Parser:
         }
         self.is_output_message = False
 
-    def reset(self):
-        self.is_output_message = False
-
     def parse(self, line: str):
-        # print("Current line: ")
-        # print(line)
         if self.is_output_message:
             return
         line = line.strip()
@@ -25,8 +20,8 @@ class Parser:
             if line.startswith('==='):
                 self.is_output_message = True
                 return
+            print(line, end='\t\t==>\t\t')
             res = re.findall(r'\w+', line)
-            print(res)
             cmd = res[0]
             if cmd not in self.commands:
                 raise ParseError(

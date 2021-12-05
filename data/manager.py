@@ -72,7 +72,7 @@ class DataManager:
             # If there's no lock on the variable, set a read lock then read directly.
             if not current_lock:
                 lock_manager.set_current_lock(ReadLock(tid, vid))
-                return ResultValue(True, v.get_last_commit_value())
+                return ResultValue(v.get_last_commit_value(), True)
 
             # There is a read lock on the variable.
             if current_lock.lock_type == LockType.R:

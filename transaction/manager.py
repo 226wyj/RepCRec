@@ -22,8 +22,6 @@ class TransactionManager:
         arguments = self.parser.parse(s)
         if not arguments:
             return
-        # print('arguments: ')
-        # print(arguments)
         if self.detect_deadlock():
             self.execute_operations()
         self.process_command(arguments)
@@ -148,14 +146,12 @@ class TransactionManager:
                 result_value = site.read(tid, vid)
                 if result_value.is_success:
                     trans.visited_sites.append(site.sid)
-                    print('Normal read transaction {} reads {} from {}: {}'.format(
+                    print('Normal read transaction {} reads {} from site {}: {}'.format(
                         tid, vid, site.sid, result_value.value))
                     return True
         return False
 
     def write(self, tid, vid, value) -> bool:
-        print('Transactions begun:')
-        print(self.transactions)
         trans = self.transactions.get(tid)
         if not trans:
             raise TransactionError("Transaction {} hasn't begun, write operation fails.".format(tid))
@@ -167,31 +163,22 @@ class TransactionManager:
                     continue
                 # If current site is up and has the certain vid, then try to get its write lock.
                 # The write operation can only be applied when got all the write locks of up sites.
-                print('transaction {}, writes variable {} with value {} to site {}'
-                      .format(tid, vid, value, site.sid))
+
+                # print('transaction {}, writes variable {} with value {} to site {}'
+                #       .format(tid, vid, value, site.sid))
                 write_lock = site.get_write_lock(tid, vid)
                 if not write_lock:
                     return False
                 target_sites.append(site)
 
-        # No site satisfies the condition, fail to write.
+        # If no site satisfies the writing condition, then fail to write.
         if not target_sites:
             return False
         # Otherwise, write to all the up sites that contains the vid.
-        # print('target sites:')
-        # print(target_sites)
         for target_site in target_sites:
-            # lock_table = target_site.lock_table
-            # data = target_site.data
-            # print('data:')
-            # print(data)
-            # lock_manager = lock_table.get(vid)
-            # print('Current lock:')
-            # print(lock_manager.current_lock)
-
             target_site.write(tid, vid, value)
             self.transactions[tid].visited_sites.append(target_site.sid)
-        print("Transaction {} finished writing variable {} with value {} to sites {}."
+        print("Transaction {} writes variable {} with value {} to sites {}."
               .format(tid, vid, value, [site.sid for site in target_sites]))
         return True
 
