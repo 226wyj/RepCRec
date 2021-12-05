@@ -102,7 +102,12 @@ class DataManager:
                     return ResultValue(None, False)
 
     def get_write_lock(self, tid, vid) -> bool:
-        lock_manager: LockManager = self.lock_table[vid]
+        # print(self.lock_table.keys())
+        # print("tid :{} , vid: {}".format(tid, vid))
+        # print('x4' in self.lock_table)
+        # print(vid in self.lock_table)
+        lock_manager: LockManager = self.lock_table.get(vid)
+        # print(lock_manager)
         current_lock = lock_manager.current_lock
         # There is no lock on the variable currently,
         # so set the current lock to write lock and return True.
@@ -185,11 +190,11 @@ class DataManager:
             if lock_manager.current_lock is None:
                 first_waiting = lock_manager.lock_queue.popleft()
                 lock_manager.set_current_lock(first_waiting)
-                if first_waiting.lock_type == LockType.R:
+                if first_waiting.lock_type == LockType.R and lock_manager.lock_queue:
                     # If multiple read locks are blocked before a write lock, then
                     # pop these read locks out of the queue and make them share the read lock.
                     next_lock = lock_manager.lock_queue.popleft()
-                    while next_lock.lock_type == LockType.R:
+                    while next_lock.lock_type == LockType.R and lock_manager.lock_queue:
                         lock_manager.shared_read_lock.add(next_lock.tid)
                         next_lock = lock_manager.lock_queue.popleft()
                     lock_manager.lock_queue.appendleft(next_lock)
@@ -205,7 +210,8 @@ class DataManager:
         """ Set the `is_up` state to false and clear the lock table. """
         self.is_up = False
         self.fail_timestamp.append(timestamp)
-        self.lock_table.clear()
+        for lock_manager in self.lock_table.values():
+            lock_manager.clear()
 
     def recover(self, timestamp: int) -> None:
         """

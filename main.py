@@ -43,8 +43,8 @@ def main(arguments):
             except IOError:
                 print("Error, can not open " + file)
     else:
-        print("You can choose one and only one input method at one time."
-              "The usage should be python main.py --file/--std/--dir")
+        print("You should choose one and only one input method at one time."
+              "The usage should be python main.py [--file] | [--std] | [--dir]")
     print('Bye')
 
 

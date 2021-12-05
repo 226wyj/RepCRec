@@ -161,9 +161,9 @@ class TransactionManager:
                 # If current site is down, then check other sites that may contain the certain vid.
                 if not site.is_up:
                     continue
+
                 # If current site is up and has the certain vid, then try to get its write lock.
                 # The write operation can only be applied when got all the write locks of up sites.
-
                 # print('transaction {}, writes variable {} with value {} to site {}'
                 #       .format(tid, vid, value, site.sid))
                 write_lock = site.get_write_lock(tid, vid)
@@ -209,14 +209,14 @@ class TransactionManager:
             print("Site {} is up, no need to recover.".format(sid))
             return
         site.recover(self.timestamp)
-        print("Site {} recovers.".format("sid"))
+        print("Site {} recovers.".format(sid))
 
     def abort(self, tid: str, site_fail=False):
         for site in self.sites:
             site.abort(tid)
         del self.transactions[tid]
-        abort_reason = 'Site Fail' if site_fail else 'Deadlock'
-        print('Abort transaction {} because of: {}'.format(tid, abort_reason))
+        abort_reason = 'Site Failed' if site_fail else 'Deadlock'
+        print('Abort transaction {}. [{}]'.format(tid, abort_reason))
         # Delete all the operations invoked by the aborted transaction.
         for operation in list(self.operations):
             if operation.tid == tid:
@@ -231,8 +231,6 @@ class TransactionManager:
     def detect_deadlock(self) -> bool:
         blocking_graph = generate_blocking_graph(self.sites)
         victim = detect(self.transactions, blocking_graph)
-        # self.deadlock_detector.update_blocking_graph(self.sites)
-        # victim = self.deadlock_detector.detect(self.transactions)
         if victim is not None:
             print("Found deadlock, abort the youngest transaction {}".format(victim))
             self.abort(victim)
