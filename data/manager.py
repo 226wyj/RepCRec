@@ -199,7 +199,7 @@ class DataManager:
                 v.add_commit_value(CommitValue(commit_value, commit_time))
                 v.temporary_value = None
                 v.is_readable = True
-        print('Commit, update lock table now.')
+        # print('Commit, update lock table now.')
         self.update_lock_table()
 
     def update_lock_table(self):

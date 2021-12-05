@@ -72,34 +72,42 @@ class LockManager:
 
     def release_current_lock(self, tid: str) -> None:
         """ Release current lock, and update shared lock lists if needed. """
-        # if self.current_lock:
-        #     if self.current_lock.lock_type == LockType.R:
-        #         if tid in self.shared_read_lock:
-        #             self.shared_read_lock.remove(tid)
-        #             if len(self.shared_read_lock) == 0:
-        #                 self.current_lock = None
-        #     else:
-        #
-        if self.current_lock and self.current_lock.tid == tid:
-            print("Start releasing")
-            print('Current lock is:', self.current_lock)
+        if self.current_lock:
             if self.current_lock.lock_type == LockType.R:
-                self.shared_read_lock.remove(tid)
+                if tid in self.shared_read_lock:
+                    self.shared_read_lock.remove(tid)
                 if len(self.shared_read_lock) == 0:
-                    # If there is no shared read locks, then set current lock to None.
                     self.current_lock = None
-                else:
-                    # Otherwise, let the next shared read lock be the current lock
-                    # according to the first-come-first-serve rule.
-                    self.current_lock = ReadLock(self.vid, self.shared_read_lock[0])
             else:
-                self.current_lock = None
-        print("After releasing, current lock is: ", self.current_lock)
+                if self.current_lock.tid == tid:
+                    self.current_lock = None
+
+        # if self.current_lock and self.current_lock.tid == tid:
+        #     print("Start releasing")
+        #     print('Current lock is:', self.current_lock)
+        #     if self.current_lock.lock_type == LockType.R:
+        #         self.shared_read_lock.remove(tid)
+        #         if len(self.shared_read_lock) == 0:
+        #             # If there is no shared read locks, then set current lock to None.
+        #             self.current_lock = None
+        #         else:
+        #             # Otherwise, let the next shared read lock be the current lock
+        #             # according to the first-come-first-serve rule.
+        #             self.current_lock = ReadLock(self.vid, self.shared_read_lock[0])
+        #     else:
+        #         self.current_lock = None
+        # print("After releasing, current lock is: ", self.current_lock)
+
+    def has_same_lock_in_queue(self, lock) -> bool:
+        for waited_lock in self.lock_queue:
+            if waited_lock.lock_type == lock.lock_type and waited_lock.tid == lock.tid:
+                return True
+        return False
 
     def add_lock_to_queue(self, lock) -> None:
         """ Only blocked locks are added to the queue. """
         all_queued_tid = [lock.tid for lock in self.lock_queue]
-        if lock in self.lock_queue:
+        if self.has_same_lock_in_queue(lock):
             # If the same kind of lock has already been in the queue, then return.
             return
         elif lock.tid in all_queued_tid and lock.lock_type == LockType.R:
@@ -111,6 +119,7 @@ class LockManager:
             return
         else:
             self.lock_queue.append(lock)
+        print('Lock queue:', self.lock_queue)
 
     def remove_lock_from_queue(self, tid) -> None:
         """ Remove all the lock whose tid is equal to the given tid. """

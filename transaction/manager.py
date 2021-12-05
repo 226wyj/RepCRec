@@ -24,6 +24,7 @@ class TransactionManager:
             return
         if self.detect_deadlock():
             self.execute_operations()
+        print('---------- Time {} ----------'.format(self.timestamp))
         self.process_command(arguments)
         self.execute_operations()
         self.timestamp += 1
@@ -154,33 +155,32 @@ class TransactionManager:
         if not trans:
             raise TransactionError("Transaction {} doesn't exist, write operation fails.".format(tid))
         target_sites = []
-        for site in self.sites:
-            if site.has_variable(vid):
-                # If current site is down, then check other sites that may contain the certain vid.
-                if not site.is_up:
-                    continue
+        for site in [site for site in self.sites if site.has_variable(vid)]:
+            # if site.has_variable(vid):
+            #     # If current site is down, then check other sites.
+            if not site.is_up:
+                continue
 
-                # If current site is up and has the certain vid, then try to get its write lock.
-                # The write operation can only be applied when got all the write locks of up sites.
-                # print('transaction {}, writes variable {} with value {} to site {}'
-                #       .format(tid, vid, value, site.sid))
-                write_lock = site.get_write_lock(tid, vid)
-                if not write_lock:
-                    print("transaction {} can't get write lock of {}".format(tid, vid))
-                    print("variable {} on site {} is locked by {}".format(vid, site.sid, site.lock_table.get(vid).current_lock))
-                    return False
-                target_sites.append(site)
+            # If current site is up and has the certain vid, then try to get its write lock.
+            # The write operation can only be applied when have all the write locks of up sites.
+            write_lock = site.get_write_lock(tid, vid)
+            if not write_lock:
+                print("transaction {} can't get write lock of {}".format(tid, vid))
+                print("variable {} on site {} is locked by {}".format(vid, site.sid, site.lock_table.get(vid).current_lock))
+                return False
+            target_sites.append(int(site.sid))
 
         # If no site satisfies the writing condition, then fail to write.
         if not target_sites:
             print("No site satisfies.")
             return False
         # Otherwise, write to all the up sites that contains the vid.
-        for target_site in target_sites:
+        for target_sid in target_sites:
+            target_site = self.sites[target_sid - 1]
             target_site.write(tid, vid, value)
-            self.transactions[tid].visited_sites.append(target_site.sid)
+            self.transactions[tid].visited_sites.append(target_sid)
         print("Transaction {} writes variable {} with value {} to sites {}."
-              .format(tid, vid, value, [site.sid for site in target_sites]))
+              .format(tid, vid, value, target_sites))
         return True
 
     def dump(self):
@@ -228,6 +228,9 @@ class TransactionManager:
             site.commit(tid, commit_time)
         self.transactions.pop(tid)
         print("Transaction {} commits at time {}.".format(tid, commit_time))
+        # for operation in list(self.operations):
+        #     if operation.tid == tid:
+        #         self.operations.remove(operation)
 
     def detect_deadlock(self) -> bool:
         blocking_graph = generate_blocking_graph(self.sites)
