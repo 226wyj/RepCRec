@@ -3,7 +3,6 @@ from collections import defaultdict
 from data.lock import ReadLock, WriteLock, LockManager, LockType, is_conflict
 from data.value import CommitValue, TemporaryValue, ResultValue
 from data.variable import Variable
-from errors import DataError
 
 
 class DataManager:
@@ -187,11 +186,8 @@ class DataManager:
     def commit(self, tid, commit_time):
         # Release locks.
         for lock_manager in self.lock_table.values():
-            # lock_manager.current_lock = None
             lock_manager.release_current_lock(tid)
 
-            # print('Check current lock after releasing:')
-            # print(tid, lock_manager.current_lock)
         # Commit temporary values.
         for v in self.data.values():
             if v.temporary_value is not None and v.temporary_value.tid == tid:
@@ -199,32 +195,32 @@ class DataManager:
                 v.add_commit_value(CommitValue(commit_value, commit_time))
                 v.temporary_value = None
                 v.is_readable = True
-        # print('Commit, update lock table now.')
         self.update_lock_table()
 
     def update_lock_table(self):
-        for lock_manager in self.lock_table.values():
-            if lock_manager.current_lock is None:
-                if len(lock_manager.lock_queue) == 0:
-                    continue
-                first_waiting = lock_manager.lock_queue.popleft()
-                print('First waiting Lock: ', first_waiting)
-                lock_manager.set_current_lock(first_waiting)
-                if first_waiting.lock_type == LockType.R and lock_manager.lock_queue:
-                    # If multiple read locks are blocked before a write lock, then
-                    # pop these read locks out of the queue and make them share the read lock.
-                    next_lock = lock_manager.lock_queue.popleft()
-                    while next_lock.lock_type == LockType.R and lock_manager.lock_queue:
-                        lock_manager.shared_read_lock.add(next_lock.tid)
-                        next_lock = lock_manager.lock_queue.popleft()
-                    lock_manager.lock_queue.appendleft(next_lock)
+        for lock_manager in \
+                [x for x in self.lock_table.values() if not x.current_lock]:
+            # if lock_manager.current_lock is None:
+            if len(lock_manager.lock_queue) == 0:
+                continue
+            first_waiting = lock_manager.lock_queue.popleft()
 
-                    # If the current lock is a read lock, and the next lock is the write lock
-                    # of the same transaction, then promote the current read lock.
-                    if len(lock_manager.shared_read_lock) == 1 and \
-                            next_lock.tid == lock_manager.shared_read_lock[0]:
-                        lock_manager.promote_current_lock(WriteLock(next_lock.tid, lock_manager.vid))
-                        lock_manager.lock_queue.popleft()
+            lock_manager.set_current_lock(first_waiting)
+            if first_waiting.lock_type == LockType.R and lock_manager.lock_queue:
+                # If multiple read locks are blocked before a write lock, then
+                # pop these read locks out of the queue and make them share the read lock.
+                next_lock = lock_manager.lock_queue.popleft()
+                while next_lock.lock_type == LockType.R and lock_manager.lock_queue:
+                    lock_manager.shared_read_lock.add(next_lock.tid)
+                    next_lock = lock_manager.lock_queue.popleft()
+                lock_manager.lock_queue.appendleft(next_lock)
+
+                # If the current lock is a read lock, and the next lock is the write lock
+                # of the same transaction, then promote the current read lock.
+                if len(lock_manager.shared_read_lock) == 1 and \
+                        next_lock.tid == lock_manager.shared_read_lock[0]:
+                    lock_manager.promote_current_lock(WriteLock(next_lock.tid, lock_manager.vid))
+                    lock_manager.lock_queue.popleft()
 
             # if len(lock_manager.lock_queue) == 0:
             #     continue
@@ -280,7 +276,7 @@ class DataManager:
                     # lock in queue.
                     if current_lock.lock_type == LockType.R:
                         for shared_lock_tid in [x for x in lock_manager.shared_read_lock
-                                                if not (x == current_lock.tid or x == lock.tid)]:
+                                                if not (x == lock.tid)]:
                             blocking_graph[lock.tid].add(shared_lock_tid)
                     else:
                         # If current lock is a write lock, then according our rule of adding locks

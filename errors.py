@@ -20,3 +20,11 @@ class ParseError(Exception):
 
     def __repr__(self):
         return "Parse Error: " + self.message
+
+
+class LockError(Exception):
+    def __init__(self, message):
+        self.message = message
+
+    def __repr__(self):
+        return "Lock Error: " + self.message

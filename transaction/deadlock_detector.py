@@ -6,11 +6,13 @@ from data.manager import DataManager
 
 def generate_blocking_graph(sites: List[DataManager]):
     blocking_graph = defaultdict(set)
-    for site in sites:
-        if site.is_up:
-            graph = site.generate_blocking_graph()
-            for tid, adjacent_tid_set in graph.items():
-                blocking_graph[tid].update(adjacent_tid_set)
+    for site in [x for x in sites if x.is_up]:
+        graph = site.generate_blocking_graph()
+        print('\nBlocking graph of site {}'.format(site.sid))
+        print(graph)
+        print()
+        for tid, adjacent_tid_set in graph.items():
+            blocking_graph[tid].update(adjacent_tid_set)
     return blocking_graph
 
 
