@@ -1,5 +1,6 @@
 from collections import deque
 from enum import Enum
+
 from errors import LockError
 
 
@@ -10,8 +11,8 @@ class LockType(Enum):
 
 class Lock:
     def __init__(self, tid: str, vid: str, lock_type: LockType) -> None:
-        self.tid = tid              # transaction id
-        self.vid = vid              # variable id
+        self.tid = tid  # transaction id
+        self.vid = vid  # variable id
         self.lock_type = lock_type  # either R or W
 
 
@@ -38,7 +39,7 @@ class LockManager:
         self.vid = vid
         self.current_lock = None
         self.lock_queue = deque()
-        self.shared_read_lock = deque()     # Stores all the tid that are sharing the read lock, including current lock.
+        self.shared_read_lock = deque()  # Stores all the tid that are sharing the read lock, including current lock.
 
     def promote_current_lock(self, write_lock: WriteLock) -> None:
         if not self.current_lock:
@@ -49,7 +50,7 @@ class LockManager:
             raise LockError("ERROR[2]: Other transactions are sharing the read lock on variable {}".format(self.vid))
         if write_lock.tid not in self.shared_read_lock:
             raise LockError("ERROR[3]: Transaction {} is not holding " \
-                  "the read lock of variable {}, can't promote.".format(write_lock.tid, self.vid))
+                            "the read lock of variable {}, can't promote.".format(write_lock.tid, self.vid))
 
         # remove current read lock from the shared read lock set, then promote it to a write lock
         self.shared_read_lock.remove(write_lock.tid)
@@ -66,11 +67,11 @@ class LockManager:
             self.shared_read_lock.append(tid)
         else:
             raise "ERROR[4]: Transaction {}'s current lock on variable {} " \
-                  "is a write lock, which can not be shared."\
+                  "is a write lock, which can not be shared." \
                 .format(
-                    self.current_lock.tid,
-                    self.current_lock.vid
-                )
+                self.current_lock.tid,
+                self.current_lock.vid
+            )
 
     def release_current_lock(self, tid: str) -> None:
         """ Release current lock, and update shared lock lists if needed. """
@@ -91,21 +92,6 @@ class LockManager:
                 if waited_lock.lock_type == lock.lock_type or lock.lock_type == LockType.R:
                     return
         self.lock_queue.append(lock)
-        # all_queued_tid = [lock.tid for lock in self.lock_queue]
-        # if self.has_same_lock_in_queue(lock):
-        #     # If the same kind of lock has already been in the queue, then return.
-        #     return
-        # elif lock.tid in all_queued_tid and lock.lock_type == LockType.R:
-        #     # If the same transaction has lock in queue, then there are two possibilities:
-        #     # (1) R lock in queue and W new lock;
-        #     # (2) W lock in queue and R new lock;
-        #     # If the new lock is R type, then the same transaction must have a W lock
-        #     # in queue, no need to add a new R lock.
-        #     return
-        # else:
-        #     self.lock_queue.append(lock)
-        # print('Lock queue:', self.lock_queue)
-        # print('Shared read lock: ', self.shared_read_lock)
 
     def remove_lock_from_queue(self, tid) -> None:
         """ Remove all the lock whose tid is equal to the given tid. """

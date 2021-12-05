@@ -19,7 +19,6 @@ class Parser:
             if line.startswith('==='):
                 self.is_hint = True
                 return
-            print(line, end='\t\t==>\t\t')
             res = re.findall(r'\w+', line)
             cmd = res[0]
             if cmd not in self.commands:

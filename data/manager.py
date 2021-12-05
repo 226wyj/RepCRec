@@ -7,12 +7,12 @@ from data.variable import Variable
 
 class DataManager:
     def __init__(self, sid: int) -> None:
-        self.sid = sid                      # site id
-        self.is_up = True                   # whether the site is down or not
-        self.data = defaultdict()           # all the variables stored in the site
-        self.lock_table = defaultdict()     # lock managers for each variable
-        self.fail_timestamp = []            # record all the fail time of this site
-        self.recover_timestamp = []         # record all the recover time of this site
+        self.sid = sid  # site id
+        self.is_up = True  # whether the site is down or not
+        self.data = defaultdict()  # all the variables stored in the site
+        self.lock_table = defaultdict()  # lock managers for each variable
+        self.fail_timestamp = []  # record all the fail time of this site
+        self.recover_timestamp = []  # record all the recover time of this site
 
         # initialize variables
         for i in range(1, 21):

@@ -80,7 +80,6 @@ class TransactionManager:
                 is_success = self.snapshot_read(tid, vid) if self.transactions[tid].is_ro else self.read(tid, vid)
             else:
                 is_success = self.write(tid, vid, operation.value)
-                print("Executing result of {}: {}".format(tid, is_success))
 
             if is_success:
                 self.operations.remove(operation)
@@ -91,7 +90,7 @@ class TransactionManager:
             raise TransactionError("Transaction {} has already begun.".format(tid))
         transaction = Transaction(tid, self.timestamp, False)
         self.transactions[tid] = transaction
-        print('Transaction {} begins.'.format(tid))
+        print('Normal transaction {} begins.'.format(tid))
 
     def begin_ro(self, arguments):
         tid = arguments[1]
@@ -151,15 +150,12 @@ class TransactionManager:
                     return True
         return False
 
-    # TODO: 修改write方法，必须持有所有site的写锁才能对其进行统一加锁写操作
     def write(self, tid, vid, value) -> bool:
         trans = self.transactions.get(tid)
         if not trans:
             raise TransactionError("Transaction {} doesn't exist, write operation fails.".format(tid))
         target_sites = []
         for site in [site for site in self.sites if site.has_variable(vid)]:
-            # if site.has_variable(vid):
-            #     # If current site is down, then check other sites.
             if not site.is_up:
                 continue
 
@@ -167,8 +163,6 @@ class TransactionManager:
             # The write operation can only be applied when have all the write locks of up sites.
             write_lock = site.get_write_lock(tid, vid)
             if not write_lock:
-                print("transaction {} can't get write lock of {}".format(tid, vid))
-                print("variable {} on site {} is locked by {}".format(vid, site.sid, site.lock_table.get(vid).current_lock))
                 return False
             target_sites.append(int(site.sid))
 
