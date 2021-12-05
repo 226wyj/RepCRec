@@ -102,23 +102,21 @@ class DataManager:
                     return ResultValue(None, False)
 
     def get_write_lock(self, tid, vid) -> bool:
-        # print(self.lock_table.keys())
-        # print("tid :{} , vid: {}".format(tid, vid))
-        # print('x4' in self.lock_table)
-        # print(vid in self.lock_table)
+        """ To judge whether a transaction can get the write lock of the certain variable. """
         lock_manager: LockManager = self.lock_table.get(vid)
-        # print(lock_manager)
         current_lock = lock_manager.current_lock
+        # print(tid, current_lock)
         # There is no lock on the variable currently,
         # so set the current lock to write lock and return True.
         if not current_lock:
-            lock_manager.set_current_lock(WriteLock(tid, vid))
+            # lock_manager.set_current_lock(WriteLock(tid, vid))
             return True
         else:
             if current_lock.lock_type == LockType.R:
-                # There are more than one transaction holds the read lock of the variable,
-                # so we have to wait in queue.
                 if len(lock_manager.shared_read_lock) != 1:
+                    # There are multiple transactions holding the read lock of the variable,
+                    # so the transaction can't get a write lock, and this request has to
+                    # wait in queue.
                     lock_manager.add_lock_to_queue(WriteLock(tid, vid))
                     return False
                 else:
@@ -127,13 +125,13 @@ class DataManager:
                             # The transaction holds the read lock of the variable currently,
                             # and there is no other write transactions waiting in queue, can
                             # promote its read lock to write lock.
-                            lock_manager.promote_current_lock(WriteLock(tid, vid))
+                            # lock_manager.promote_current_lock(WriteLock(tid, vid))
                             return True
                         else:
                             lock_manager.add_lock_to_queue(WriteLock(tid, vid))
                             return False
-                    # There are other transactions holding the read lock.
                     else:
+                        # There are other transactions holding the read lock.
                         lock_manager.add_lock_to_queue(WriteLock(tid, vid))
                         return False
             else:
@@ -148,14 +146,30 @@ class DataManager:
         lock_manager: LockManager = self.lock_table.get(vid)
         v: Variable = self.data.get(vid)
         assert lock_manager is not None and v is not None
-
-        try:
-            current_lock = lock_manager.current_lock
-            assert current_lock.tid == tid and \
-                   current_lock.vid == vid and current_lock.lock_type == LockType.W
+        current_lock = lock_manager.current_lock
+        if current_lock:
+            if current_lock.lock_type == LockType.R:
+                # If current lock is a read lock, then it must be of the same transaction,
+                # and there should be no other locks waiting in queue.
+                assert len(lock_manager.shared_read_lock) == 1 and \
+                       tid in lock_manager.shared_read_lock and \
+                       not lock_manager.has_other_write_lock(tid)
+                lock_manager.promote_current_lock(WriteLock(tid, vid))
+                v.temporary_value = TemporaryValue(value, tid)
+            else:
+                # If current lock is a write lock, then it must of the same transaction.
+                assert tid == current_lock.tid
+                v.temporary_value = TemporaryValue(value, tid)
+        else:
+            lock_manager.set_current_lock(WriteLock(tid, vid))
             v.temporary_value = TemporaryValue(value, tid)
-        except Exception:
-            raise DataError("current lock is not the write lock of transaction {}.".format(tid))
+        # try:
+        #     current_lock = lock_manager.current_lock
+        #     assert current_lock.tid == tid and \
+        #            current_lock.vid == vid and current_lock.lock_type == LockType.W
+        #     v.temporary_value = TemporaryValue(value, tid)
+        # except Exception:
+        #     raise DataError("current lock is not the write lock of transaction {}.".format(tid))
 
     def dump(self):
         site_status = 'up' if self.is_up else 'down'
@@ -173,7 +187,11 @@ class DataManager:
     def commit(self, tid, commit_time):
         # Release locks.
         for lock_manager in self.lock_table.values():
+            # lock_manager.current_lock = None
             lock_manager.release_current_lock(tid)
+
+            # print('Check current lock after releasing:')
+            # print(tid, lock_manager.current_lock)
         # Commit temporary values.
         for v in self.data.values():
             if v.temporary_value is not None and v.temporary_value.tid == tid:
@@ -181,14 +199,16 @@ class DataManager:
                 v.add_commit_value(CommitValue(commit_value, commit_time))
                 v.temporary_value = None
                 v.is_readable = True
+        print('Commit, update lock table now.')
         self.update_lock_table()
 
     def update_lock_table(self):
         for lock_manager in self.lock_table.values():
-            if len(lock_manager.lock_queue) == 0:
-                continue
             if lock_manager.current_lock is None:
+                if len(lock_manager.lock_queue) == 0:
+                    continue
                 first_waiting = lock_manager.lock_queue.popleft()
+                print('First waiting Lock: ', first_waiting)
                 lock_manager.set_current_lock(first_waiting)
                 if first_waiting.lock_type == LockType.R and lock_manager.lock_queue:
                     # If multiple read locks are blocked before a write lock, then
@@ -205,6 +225,27 @@ class DataManager:
                             next_lock.tid == lock_manager.shared_read_lock[0]:
                         lock_manager.promote_current_lock(WriteLock(next_lock.tid, lock_manager.vid))
                         lock_manager.lock_queue.popleft()
+
+            # if len(lock_manager.lock_queue) == 0:
+            #     continue
+            # if lock_manager.current_lock is None:
+            #     first_waiting = lock_manager.lock_queue.popleft()
+            #     lock_manager.set_current_lock(first_waiting)
+            #     if first_waiting.lock_type == LockType.R and lock_manager.lock_queue:
+            #         # If multiple read locks are blocked before a write lock, then
+            #         # pop these read locks out of the queue and make them share the read lock.
+            #         next_lock = lock_manager.lock_queue.popleft()
+            #         while next_lock.lock_type == LockType.R and lock_manager.lock_queue:
+            #             lock_manager.shared_read_lock.add(next_lock.tid)
+            #             next_lock = lock_manager.lock_queue.popleft()
+            #         lock_manager.lock_queue.appendleft(next_lock)
+            #
+            #         # If the current lock is a read lock, and the next lock is the write lock
+            #         # of the same transaction, then promote the current read lock.
+            #         if len(lock_manager.shared_read_lock) == 1 and \
+            #                 next_lock.tid == lock_manager.shared_read_lock[0]:
+            #             lock_manager.promote_current_lock(WriteLock(next_lock.tid, lock_manager.vid))
+            #             lock_manager.lock_queue.popleft()
 
     def fail(self, timestamp: int) -> None:
         """ Set the `is_up` state to false and clear the lock table. """

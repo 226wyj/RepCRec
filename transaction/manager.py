@@ -69,9 +69,7 @@ class TransactionManager:
             self.recover(arguments)
 
     def execute_operations(self):
-        i = 0
-        while i < len(self.operations):
-            operation = self.operations[i]
+        for operation in list(self.operations):
             tid = operation.tid
             vid = operation.vid
 
@@ -79,11 +77,10 @@ class TransactionManager:
                 is_success = self.snapshot_read(tid, vid) if self.transactions[tid].is_ro else self.read(tid, vid)
             else:
                 is_success = self.write(tid, vid, operation.value)
+                print("Executing result of {}: {}".format(tid, is_success))
 
             if is_success:
-                del self.operations[i]
-            else:
-                i += 1
+                self.operations.remove(operation)
 
     def begin(self, arguments):
         tid = arguments[1]
@@ -151,10 +148,11 @@ class TransactionManager:
                     return True
         return False
 
+    # TODO: 修改write方法，必须持有所有site的写锁才能对其进行统一加锁写操作
     def write(self, tid, vid, value) -> bool:
         trans = self.transactions.get(tid)
         if not trans:
-            raise TransactionError("Transaction {} hasn't begun, write operation fails.".format(tid))
+            raise TransactionError("Transaction {} doesn't exist, write operation fails.".format(tid))
         target_sites = []
         for site in self.sites:
             if site.has_variable(vid):
@@ -168,11 +166,14 @@ class TransactionManager:
                 #       .format(tid, vid, value, site.sid))
                 write_lock = site.get_write_lock(tid, vid)
                 if not write_lock:
+                    print("transaction {} can't get write lock of {}".format(tid, vid))
+                    print("variable {} on site {} is locked by {}".format(vid, site.sid, site.lock_table.get(vid).current_lock))
                     return False
                 target_sites.append(site)
 
         # If no site satisfies the writing condition, then fail to write.
         if not target_sites:
+            print("No site satisfies.")
             return False
         # Otherwise, write to all the up sites that contains the vid.
         for target_site in target_sites:
@@ -193,7 +194,7 @@ class TransactionManager:
         # site id starts from 1, while the index of self.sites starts from 0.
         site = self.sites[sid - 1]
         if not site.is_up:
-            raise TransactionError("Site {} has already down.".format(sid))
+            raise TransactionError("Site {} is already down.".format(sid))
         site.fail(sid)
         print("Site {} fails.".format(sid))
         for trans in self.transactions.values():

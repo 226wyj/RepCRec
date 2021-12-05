@@ -18,10 +18,16 @@ class ReadLock(Lock):
     def __init__(self, tid: str, vid: str) -> None:
         super(ReadLock, self).__init__(tid, vid, LockType.R)
 
+    def __repr__(self):
+        return '[ReadLock {} {}]'.format(self.tid, self.vid)
+
 
 class WriteLock(Lock):
     def __init__(self, tid: str, vid: str) -> None:
         super(WriteLock, self).__init__(tid, vid, LockType.W)
+
+    def __repr__(self):
+        return '[WriteLock {} {}]'.format(self.tid, self.vid)
 
 
 class LockManager:
@@ -66,7 +72,17 @@ class LockManager:
 
     def release_current_lock(self, tid: str) -> None:
         """ Release current lock, and update shared lock lists if needed. """
+        # if self.current_lock:
+        #     if self.current_lock.lock_type == LockType.R:
+        #         if tid in self.shared_read_lock:
+        #             self.shared_read_lock.remove(tid)
+        #             if len(self.shared_read_lock) == 0:
+        #                 self.current_lock = None
+        #     else:
+        #
         if self.current_lock and self.current_lock.tid == tid:
+            print("Start releasing")
+            print('Current lock is:', self.current_lock)
             if self.current_lock.lock_type == LockType.R:
                 self.shared_read_lock.remove(tid)
                 if len(self.shared_read_lock) == 0:
@@ -78,6 +94,7 @@ class LockManager:
                     self.current_lock = ReadLock(self.vid, self.shared_read_lock[0])
             else:
                 self.current_lock = None
+        print("After releasing, current lock is: ", self.current_lock)
 
     def add_lock_to_queue(self, lock) -> None:
         """ Only blocked locks are added to the queue. """
@@ -89,7 +106,8 @@ class LockManager:
             # If the same transaction has lock in queue, then there are two possibilities:
             # (1) R lock in queue and W new lock;
             # (2) W lock in queue and R new lock;
-            # If the new lock is R type, then return.
+            # If the new lock is R type, then the same transaction must have a W lock
+            # in queue, no need to add a new R lock.
             return
         else:
             self.lock_queue.append(lock)
