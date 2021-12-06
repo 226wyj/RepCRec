@@ -63,6 +63,7 @@ class DataManager:
         """ Return the value for normally-read transactions. """
         v: Variable = self.data[vid]
         if not v.is_readable:
+            print('{} failed to read {}.{} [Site just recovered, not readable]'.format(tid, vid, self.sid))
             return ResultValue(None, False)
         else:
             lock_manager: LockManager = self.lock_table[vid]
@@ -83,6 +84,7 @@ class DataManager:
                     # locks waiting in front, so the read lock should wait in queue.
                     if lock_manager.has_write_lock():
                         lock_manager.add_lock_to_queue(ReadLock(tid, vid))
+                        print('{} failed to read {}.{} [Exist write locks waiting in front]'.format(tid, vid, self.sid))
                         return ResultValue(None, False)
                     else:
                         # There is no other write locks waiting, then share the current read lock
@@ -98,6 +100,7 @@ class DataManager:
                     return ResultValue(v.get_temporary_value(), True)
                 else:
                     lock_manager.add_lock_to_queue(ReadLock(tid, vid))
+                    print('{} failed to read {}.{} [Lock conflict]'.format(tid, vid, self.sid))
                     return ResultValue(None, False)
 
     def get_write_lock(self, tid, vid) -> bool:

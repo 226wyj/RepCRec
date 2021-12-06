@@ -3,7 +3,15 @@
 This is the final project of NYU's Advanced Database Systems Course (CSCI-GA.2434-001), whose full name
 is `Replicated Concurrency Control and Recovery`.
 
-### 1. What
+## Team members
+* Yuejiang Wu, yw5027
+* Yujie Fan, yf2173
+
+## How to run
+1. Please make sure that you have `Python 3.8+` installed.
+
+
+## What
 
 This project is aim to implement a simple **distributed database**, complete with **multi-version concurrency control**
 , **deadlock detection**, **replication**, and **failure recovery**.

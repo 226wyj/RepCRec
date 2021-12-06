@@ -141,14 +141,12 @@ class TransactionManager:
         trans: Transaction = self.transactions.get(tid)
         if not trans:
             raise TransactionError("Transaction {} hasn't begun, read operation fails.".format(tid))
-        for site in self.sites:
-            if site.is_up and site.has_variable(vid):
-                result_value = site.read(tid, vid)
-                if result_value.is_success:
-                    trans.visited_sites.append(site.sid)
-                    print('Transaction {} reads {}.{}: {}'.format(tid, vid, site.sid, result_value.value))
-                    return True
-        print()
+        for site in [x for x in self.sites if (x.is_up and x.has_variable(vid))]:
+            result_value = site.read(tid, vid)
+            if result_value.is_success:
+                trans.visited_sites.append(site.sid)
+                print('Transaction {} reads {}.{}: {}'.format(tid, vid, site.sid, result_value.value))
+                return True
         return False
 
     def write(self, tid, vid, value) -> bool:
@@ -156,10 +154,7 @@ class TransactionManager:
         if not trans:
             raise TransactionError("Transaction {} doesn't exist, write operation fails.".format(tid))
         target_sites = []
-        for site in [site for site in self.sites if site.has_variable(vid)]:
-            if not site.is_up:
-                continue
-
+        for site in [x for x in self.sites if (x.has_variable(vid) and x.is_up)]:
             # If current site is up and has the certain vid, then try to get its write lock.
             # The write operation can only be applied when have all the write locks of up sites.
             write_lock = site.get_write_lock(tid, vid)
