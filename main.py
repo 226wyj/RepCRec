@@ -15,7 +15,9 @@ def main(arguments):
                 with open(input_file, 'r') as f:
                     for line in f:
                         manager.process(line)
-                is_continue = input('Continue[Y/n]?')
+                is_continue = input('Continue[y/n]?')
+                while is_continue.lower() != 'y' and is_continue.lower() != 'n':
+                    is_continue = input('Continue[y/n]?')
                 if is_continue.lower() == 'n':
                     break
             except IOError:
@@ -40,6 +42,7 @@ def main(arguments):
                 with open(file, 'r') as f:
                     for line in f:
                         manager.process(line)
+                print()
             except IOError:
                 print("Error, can not open " + file)
     else:

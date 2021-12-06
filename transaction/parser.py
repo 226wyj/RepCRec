@@ -25,9 +25,3 @@ class Parser:
                 raise ParseError(
                     "Unknown command {}, the valid commands are {}, please check".format(cmd, self.commands))
             return res
-
-# Test if parser works.
-# if __name__ == '__main__':
-#     parser = Parser()
-#     while (command := input('> ')) != 'exit':
-#         print(parser.parse(command))

@@ -24,10 +24,12 @@ class TransactionManager:
             return
         if self.detect_deadlock():
             self.execute_operations()
-        print('---------- Time {} ----------'.format(self.timestamp))
+            print()
+        print('------- Time {} -------'.format(self.timestamp))
         self.process_command(arguments)
         self.execute_operations()
         self.timestamp += 1
+        print()
 
     def process_command(self, arguments: List[str]) -> None:
         cmd = arguments[0]
@@ -62,8 +64,6 @@ class TransactionManager:
             self.dump()
 
         elif cmd == 'fail':
-            print(arguments)
-            print(len(arguments))
             assert len(arguments) == 2
             self.fail(arguments)
 
@@ -90,7 +90,7 @@ class TransactionManager:
             raise TransactionError("Transaction {} has already begun.".format(tid))
         transaction = Transaction(tid, self.timestamp, False)
         self.transactions[tid] = transaction
-        print('Normal transaction {} begins.'.format(tid))
+        print('{} begins'.format(tid))
 
     def begin_ro(self, arguments):
         tid = arguments[1]
@@ -98,7 +98,7 @@ class TransactionManager:
             raise TransactionError("Transaction {} has already begun.".format(tid))
         transaction = Transaction(tid, self.timestamp, True)
         self.transactions[tid] = transaction
-        print('Read-only transaction {} begins.'.format(tid))
+        print('Read-only transaction {} begins'.format(tid))
 
     def end(self, arguments):
         tid = arguments[1]
@@ -119,9 +119,10 @@ class TransactionManager:
             if site.is_up and site.has_variable(vid):
                 result_value = site.snapshot_read(vid, timestamp)
                 if result_value.is_success:
-                    print('Read-only transaction {} reads {} from {}: {}'.format(
+                    print('Read-only transaction {} reads {}.{}: {}'.format(
                         tid, vid, site.sid, result_value.value))
                     return True
+        print('Read-only transaction {} failed to read {}: no suitable site.'.format(tid, vid))
         return False
 
     def add_read_operation(self, tid, vid):
@@ -145,9 +146,9 @@ class TransactionManager:
                 result_value = site.read(tid, vid)
                 if result_value.is_success:
                     trans.visited_sites.append(site.sid)
-                    print('Normal read transaction {} reads {} from site {}: {}'.format(
-                        tid, vid, site.sid, result_value.value))
+                    print('Transaction {} reads {}.{}: {}'.format(tid, vid, site.sid, result_value.value))
                     return True
+        print()
         return False
 
     def write(self, tid, vid, value) -> bool:
@@ -163,20 +164,21 @@ class TransactionManager:
             # The write operation can only be applied when have all the write locks of up sites.
             write_lock = site.get_write_lock(tid, vid)
             if not write_lock:
+                print("{} waits due to write lock conflict. Current lock : {}.".format(
+                    tid, site.lock_table[vid].current_lock))
                 return False
             target_sites.append(int(site.sid))
 
         # If no site satisfies the writing condition, then fail to write.
         if not target_sites:
-            print("No site satisfies.")
+            print()
             return False
         # Otherwise, write to all the up sites that contains the vid.
         for target_sid in target_sites:
             target_site = self.sites[target_sid - 1]
             target_site.write(tid, vid, value)
             self.transactions[tid].visited_sites.append(target_sid)
-        print("Transaction {} writes variable {} with value {} to sites {}."
-              .format(tid, vid, value, target_sites))
+        print("Transaction {} writes variable {} with value {} to sites {}.".format(tid, vid, value, target_sites))
         return True
 
     def dump(self):
@@ -186,7 +188,6 @@ class TransactionManager:
 
     def fail(self, arguments):
         sid = int(arguments[1])
-
         # site id starts from 1, while the index of self.sites starts from 0.
         site = self.sites[sid - 1]
         if not site.is_up:
@@ -213,7 +214,7 @@ class TransactionManager:
             site.abort(tid)
         del self.transactions[tid]
         abort_reason = 'Site Failed' if site_fail else 'Deadlock'
-        print('Abort transaction {}. [{}]'.format(tid, abort_reason))
+        print('{} aborts. [{}]'.format(tid, abort_reason))
         # Delete all the operations invoked by the aborted transaction.
         for operation in list(self.operations):
             if operation.tid == tid:
@@ -223,13 +224,13 @@ class TransactionManager:
         for site in self.sites:
             site.commit(tid, commit_time)
         self.transactions.pop(tid)
-        print("Transaction {} commits at time {}.".format(tid, commit_time))
+        print("{} commits at time {}.".format(tid, commit_time))
 
     def detect_deadlock(self) -> bool:
         blocking_graph = generate_blocking_graph(self.sites)
         victim = detect(self.transactions, blocking_graph)
         if victim is not None:
-            print("Found deadlock, abort the youngest transaction {}".format(victim))
+            print("Found deadlock, aborts the youngest transaction {}".format(victim))
             self.abort(victim)
             return True
         return False

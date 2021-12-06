@@ -162,13 +162,6 @@ class DataManager:
         else:
             lock_manager.set_current_lock(WriteLock(tid, vid))
             v.temporary_value = TemporaryValue(value, tid)
-        # try:
-        #     current_lock = lock_manager.current_lock
-        #     assert current_lock.tid == tid and \
-        #            current_lock.vid == vid and current_lock.lock_type == LockType.W
-        #     v.temporary_value = TemporaryValue(value, tid)
-        # except Exception:
-        #     raise DataError("current lock is not the write lock of transaction {}.".format(tid))
 
     def dump(self):
         site_status = 'up' if self.is_up else 'down'
@@ -198,9 +191,7 @@ class DataManager:
         self.update_lock_table()
 
     def update_lock_table(self):
-        for lock_manager in \
-                [x for x in self.lock_table.values() if not x.current_lock]:
-            # if lock_manager.current_lock is None:
+        for lock_manager in [x for x in self.lock_table.values() if not x.current_lock]:
             if len(lock_manager.lock_queue) == 0:
                 continue
             first_waiting = lock_manager.lock_queue.popleft()
@@ -221,27 +212,6 @@ class DataManager:
                         next_lock.tid == lock_manager.shared_read_lock[0]:
                     lock_manager.promote_current_lock(WriteLock(next_lock.tid, lock_manager.vid))
                     lock_manager.lock_queue.popleft()
-
-            # if len(lock_manager.lock_queue) == 0:
-            #     continue
-            # if lock_manager.current_lock is None:
-            #     first_waiting = lock_manager.lock_queue.popleft()
-            #     lock_manager.set_current_lock(first_waiting)
-            #     if first_waiting.lock_type == LockType.R and lock_manager.lock_queue:
-            #         # If multiple read locks are blocked before a write lock, then
-            #         # pop these read locks out of the queue and make them share the read lock.
-            #         next_lock = lock_manager.lock_queue.popleft()
-            #         while next_lock.lock_type == LockType.R and lock_manager.lock_queue:
-            #             lock_manager.shared_read_lock.add(next_lock.tid)
-            #             next_lock = lock_manager.lock_queue.popleft()
-            #         lock_manager.lock_queue.appendleft(next_lock)
-            #
-            #         # If the current lock is a read lock, and the next lock is the write lock
-            #         # of the same transaction, then promote the current read lock.
-            #         if len(lock_manager.shared_read_lock) == 1 and \
-            #                 next_lock.tid == lock_manager.shared_read_lock[0]:
-            #             lock_manager.promote_current_lock(WriteLock(next_lock.tid, lock_manager.vid))
-            #             lock_manager.lock_queue.popleft()
 
     def fail(self, timestamp: int) -> None:
         """ Set the `is_up` state to false and clear the lock table. """
