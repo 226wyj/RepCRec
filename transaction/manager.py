@@ -87,15 +87,15 @@ class TransactionManager:
     def begin(self, arguments):
         tid = arguments[1]
         if tid in self.transactions:
-            raise TransactionError("Transaction {} has already begun.".format(tid))
+            raise TransactionError("{} has already begun.".format(tid))
         transaction = Transaction(tid, self.timestamp, False)
         self.transactions[tid] = transaction
-        print('{} begins'.format(tid))
+        print('Transaction {} begins'.format(tid))
 
     def begin_ro(self, arguments):
         tid = arguments[1]
         if tid in self.transactions:
-            raise TransactionError("Transaction {} has already begun.".format(tid))
+            raise TransactionError("{} has already begun.".format(tid))
         transaction = Transaction(tid, self.timestamp, True)
         self.transactions[tid] = transaction
         print('Read-only transaction {} begins'.format(tid))

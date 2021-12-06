@@ -4,16 +4,79 @@ This is the final project of NYU's Advanced Database Systems Course (CSCI-GA.243
 is `Replicated Concurrency Control and Recovery`.
 
 ## Team members
+
 * Yuejiang Wu, yw5027
 * Yujie Fan, yf2173
 
-## How to run
-1. Please make sure that you have `Python 3.8+` installed.
+## How to run directly
 
+1. Please make sure that you have `Python 3.8+` installed.
+2. To get input from file, use the following command:
+
+    ```shell
+    python main.py --file
+    ```
+
+   Then, the CLI will output the guide message as shown below:
+
+   ```
+   Please input file path:
+   > 
+   ```
+
+   Just type in the file name after `>`, and make sure to add the relative path to `main.py`, which means, suppose the
+   file name is `test1`, and it is in the `test` directory relative to `main.py`, then we should type in `test/test1`
+   after `>`.
+
+   After finishing processing the given file, the CLI will output another guide message to ask whether you want to
+   process another file, the guide message is shown below:
+
+   ```
+   Continue[y/n]?
+   ```
+    
+   If you want to continue getting inputs from another file, please type in `y`, then the hint message that guides you
+   to input file name will show again. Otherwise, please input `n`, and the program will exit.
+
+3. To get input from standard input, use the following command:
+
+   ```shell
+   python main.py --std 
+   ```
+
+   Then, the CLI will output the guide message as shown below:
+
+   ```
+   Standard input, use 'exit' to exit.
+   > 
+   ```
+
+   and you can type in the command after `>`. To exit the `--std` mode, just type in `exit` after `>`.
+
+4. To make it easier to test multiple files at the same time, I also add a `--dir` option (although it is not required).
+   To get input files from a target directory, use the following command:
+
+   ```shell
+   python main.py --dir
+   ``` 
+
+   Then, the CLI will output the following guide message to let you type in the target directory:
+
+   ```
+   Please input the root directory: 
+   > 
+   ```
+
+   After got the directory, the program will iterate all the files in the directory and process every one of them. For
+   example, suppose all the test files are in the relative directory to `main.py` whose name is `test`, then all you
+   need to input after `>` is `test`, and the program will process all the test files in `test` directory automatically.
+
+## Use reprounzip
 
 ## What
 
-This project is aim to implement a simple **distributed database**, complete with **multi-version concurrency control**
+This project is aim to implement a simple **distributed database model**, complete with **multi-version concurrency
+control**
 , **deadlock detection**, **replication**, and **failure recovery**.
 
 ## Data
