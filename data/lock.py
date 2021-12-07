@@ -49,8 +49,8 @@ class LockManager:
         if len(self.shared_read_lock) != 1:
             raise LockError("ERROR[2]: Other transactions are sharing the read lock on variable {}".format(self.vid))
         if write_lock.tid not in self.shared_read_lock:
-            raise LockError("ERROR[3]: Transaction {} is not holding " \
-                            "the read lock of variable {}, can't promote.".format(write_lock.tid, self.vid))
+            raise LockError("ERROR[3]: Transaction {} is not holding ".format(write_lock.tid) +
+                            "the read lock of variable {}, can't promote.".format(self.vid))
 
         # remove current read lock from the shared read lock set, then promote it to a write lock
         self.shared_read_lock.remove(write_lock.tid)
@@ -66,11 +66,9 @@ class LockManager:
         if self.current_lock.lock_type == LockType.R and tid not in self.shared_read_lock:
             self.shared_read_lock.append(tid)
         else:
-            raise "ERROR[4]: Transaction {}'s current lock on variable {} " \
-                  "is a write lock, which can not be shared." \
-                .format(
-                self.current_lock.tid,
-                self.current_lock.vid
+            raise LockError(
+                ("ERROR[4]: Transaction {}'s current lock on variable {} is a "
+                 "write lock, which can not be shared.".format(self.current_lock.tid, self.current_lock.vid))
             )
 
     def release_current_lock(self, tid: str) -> None:
