@@ -71,6 +71,28 @@ is `Replicated Concurrency Control and Recovery`.
    example, suppose all the test files are in the relative directory to `main.py` whose name is `test`, then all you
    need to input after `>` is `test`, and the program will process all the test files in `test` directory automatically.
 
+5. If you get stuck, you can get help with `-h` option at any time. For example, use
+
+    ```shell
+    python main.py -h
+    ```
+   
+    and the brief introduction of different arguments will be printed:
+
+    ```text
+    usage: main.py [-h] [--file] [--std] [--dir]
+    
+    Choose whether to get input from the keyboard or the file
+    
+    optional arguments:
+      -h, --help  show this help message and exit
+      --file      whether to get input from file
+      --std       whether to get input from standard input
+      --dir       whether to get input from a directory.
+    ```
+   
+    The most important thing is, be sure to give one and only one right argument when using the program.
+
 ## Use reprounzip
 
 ## What
