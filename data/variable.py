@@ -13,6 +13,7 @@ class Variable:
         self.is_readable = True
 
     def get_last_commit_value(self):
+        """Get the most recent commit value."""
         res = self.commit_value_list.popleft()
         self.commit_value_list.appendleft(res)
         return res.value
@@ -21,6 +22,11 @@ class Variable:
         self.commit_value_list.appendleft(v)
 
     def get_temporary_value(self):
+        """Get the temporary value if exists.
+
+        A temporary value is a value that writen by
+        certain transaction, but has not been committed yet.
+        """
         if not self.temporary_value:
             raise DataError("Variable {} has no temporary value.".format(self.vid))
         else:
