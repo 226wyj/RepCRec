@@ -10,7 +10,7 @@ is `Replicated Concurrency Control and Recovery`.
 
 ## How to run directly
 
-1. Please make sure that you have `Python 3.8+` installed.
+1. Please make sure that you have `Python 3.6+` installed.
 2. To get input from file, use the following command:
 
     ```shell
@@ -92,8 +92,6 @@ is `Replicated Concurrency Control and Recovery`.
     ```
    
     The most important thing is, be sure to give one and only one right argument when using the program.
-
-## Use reprounzip
 
 ## What
 
