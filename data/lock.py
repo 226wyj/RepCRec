@@ -33,7 +33,8 @@ class WriteLock(Lock):
 
 
 class LockManager:
-    """ Manage locks for a certain variable. """
+    """Manage locks for a certain variable.
+    """
 
     def __init__(self, vid: str) -> None:
         self.vid = vid
@@ -42,6 +43,10 @@ class LockManager:
         self.shared_read_lock = deque()  # Stores all the tid that are sharing the read lock, including current lock.
 
     def promote_current_lock(self, write_lock: WriteLock) -> None:
+        """Promote the current read lock to write lock if possible.
+
+        @author Yujie Fan
+        """
         if not self.current_lock:
             raise LockError("ERROR[0]: No lock on variable {}.".format(self.vid))
         if not self.current_lock.lock_type == LockType.R:
@@ -58,11 +63,21 @@ class LockManager:
         print("After promotion, current lock: ", self.current_lock)
 
     def clear(self):
+        """
+        Clear the lock manager's message, is used when a site wants to
+        clear its lock table.
+
+        @author Yujie Fan
+        """
         self.current_lock = None
         self.lock_queue.clear()
         self.shared_read_lock.clear()
 
     def share_current_lock(self, tid: str):
+        """Share the current read lock with other transactions if possible.
+
+        @author Yujie Fan
+        """
         if self.current_lock.lock_type == LockType.R and tid not in self.shared_read_lock:
             self.shared_read_lock.append(tid)
         else:
@@ -72,7 +87,10 @@ class LockManager:
             )
 
     def release_current_lock(self, tid: str) -> None:
-        """ Release current lock, and update shared lock lists if needed. """
+        """Release current lock, and update shared lock lists if needed.
+
+        @author Yuejiang Wu
+        """
         if self.current_lock:
             if self.current_lock.lock_type == LockType.R:
                 if tid in self.shared_read_lock:
@@ -84,7 +102,10 @@ class LockManager:
                     self.current_lock = None
 
     def add_lock_to_queue(self, lock) -> None:
-        """ Only blocked locks are added to the queue. """
+        """Only blocked locks are added to the queue.
+
+        @author Yuejiang Wu
+        """
         for waited_lock in self.lock_queue:
             if waited_lock.tid == lock.tid:
                 if waited_lock.lock_type == lock.lock_type or lock.lock_type == LockType.R:
@@ -92,7 +113,10 @@ class LockManager:
         self.lock_queue.append(lock)
 
     def remove_lock_from_queue(self, tid) -> None:
-        """ Remove all the lock whose tid is equal to the given tid. """
+        """Remove all the lock whose tid is equal to the given tid.
+
+        @author Yujie Fan
+        """
         self.lock_queue = deque([lock for lock in self.lock_queue if lock.tid != tid])
 
     def set_current_lock(self, lock):
@@ -101,12 +125,22 @@ class LockManager:
         self.current_lock = lock
 
     def has_write_lock(self):
+        """Check if there is a write lock waiting in queue.
+
+        @author Yujie Fan
+        """
         for lock in self.lock_queue:
             if lock.lock_type == LockType.W:
                 return True
         return False
 
     def has_other_write_lock(self, tid):
+        """
+        Check if there is a write lock waiting in queue apart from
+        that of the same transaction.
+
+        @author Yujie Fan
+        """
         for lock in self.lock_queue:
             if lock.lock_type == LockType.W:
                 if lock.tid != tid:
@@ -115,11 +149,15 @@ class LockManager:
 
 
 def is_conflict(lock1, lock2) -> bool:
-    """
-    To judge if lock1 conflicts with lock2.
-    (1) R lock conflicts with W lock.
-    (2) W lock conflicts with R lock and W lock.
+    """Static method, to judge if lock1 conflicts with lock2.
+
+    Principle:
+        (1) R lock conflicts with W lock.
+        (2) W lock conflicts with R lock and W lock.
+
     Besides, It is guaranteed that a lock won't be conflicted with itself.
+
+    @author Yuejiang Wu
     """
     if lock1.lock_type == LockType.R and lock2.lock_type == LockType.R:
         return False

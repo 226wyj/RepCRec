@@ -6,6 +6,8 @@ from data.variable import Variable
 
 
 class DataManager:
+    """Manage all the data in a site
+    """
     def __init__(self, sid: int) -> None:
         self.sid = sid  # site id
         self.is_up = True  # whether the site is down or not
@@ -42,7 +44,10 @@ class DataManager:
         return True if vid in self.data else False
 
     def snapshot_read(self, vid: str, timestamp: int) -> ResultValue:
-        """ Return the snapshot value for read-only transactions. """
+        """Return the snapshot value for read-only transactions.
+
+        @author Yuejiang Wu
+        """
         v: Variable = self.data[vid]
         if not v.is_readable:
             return ResultValue(None, False)
@@ -60,7 +65,10 @@ class DataManager:
             return ResultValue(None, False)
 
     def read(self, tid: str, vid: str) -> ResultValue:
-        """ Return the value for normally-read transactions. """
+        """Return the value for normally-read transactions.
+
+        @author Yuejiang Wu
+        """
         v: Variable = self.data[vid]
         if not v.is_readable:
             print('{} failed to read {}.{} [Site just recovered, not readable]'.format(tid, vid, self.sid))
@@ -104,7 +112,12 @@ class DataManager:
                     return ResultValue(None, False)
 
     def get_write_lock(self, tid, vid) -> bool:
-        """ To judge whether a transaction can get the write lock of the certain variable. """
+        """
+        To judge whether a transaction can get the write
+        lock of the certain variable.
+
+        @author Yuejiang Wu
+        """
         lock_manager: LockManager = self.lock_table.get(vid)
         current_lock = lock_manager.current_lock
         # print(tid, current_lock)
@@ -145,6 +158,13 @@ class DataManager:
                     return False
 
     def write(self, tid, vid, value) -> None:
+        """Add write lock to certain site and write its temporary value.
+
+        This method will only be called after getting the write lock successfully,
+        so there are no extra checking steps.
+
+        @author Yuejiang Wu
+        """
         lock_manager: LockManager = self.lock_table.get(vid)
         v: Variable = self.data.get(vid)
         assert lock_manager is not None and v is not None
@@ -167,6 +187,10 @@ class DataManager:
             v.temporary_value = TemporaryValue(value, tid)
 
     def dump(self):
+        """Show all the variables in the site.
+
+        @author Yuejiang Wu
+        """
         site_status = 'up' if self.is_up else 'down'
         output = 'site {} [{}] - '.format(self.sid, site_status)
         for v in self.data.values():
@@ -174,12 +198,30 @@ class DataManager:
         print(output)
 
     def abort(self, tid):
+        """Abort certain transactino.
+
+        Side Effect:
+            (1) All the locks that required by this transaction will be released.
+            (2) All the operations of this transaction that are waiting in queue
+                will be dropped.
+
+        @author Yuejiang Wu
+        """
         for lock_manager in self.lock_table.values():
             lock_manager.release_current_lock(tid)
             lock_manager.remove_lock_from_queue(tid)
         self.update_lock_table()
 
     def commit(self, tid, commit_time):
+        """Commit the given transaction.
+
+        Side Effect:
+            (1) If the transaction writes temporary value on the site,
+                then save it as the commit value.
+            (2) Release all the locks that are required by the transaction.
+
+        @author Yuejiang Wu
+        """
         # Release locks.
         for lock_manager in self.lock_table.values():
             lock_manager.release_current_lock(tid)
@@ -194,6 +236,16 @@ class DataManager:
         self.update_lock_table()
 
     def update_lock_table(self):
+        """Update the lock table if current lock has been released.
+
+        If current lock is released and there are other locks waiting in queue,
+        the first lock in queue should be popped and become the current lock according
+        to the First-Come-First-Serve protocol. If this lock is a read lock, then
+        its followed read locks will share the same read lock until there is a
+        write lock
+
+        @author Yuejiang Wu
+        """
         for lock_manager in [x for x in self.lock_table.values() if not x.current_lock]:
             if len(lock_manager.lock_queue) == 0:
                 continue
@@ -217,7 +269,14 @@ class DataManager:
                     lock_manager.lock_queue.popleft()
 
     def fail(self, timestamp: int) -> None:
-        """ Set the `is_up` state to false and clear the lock table. """
+        """Fail the current site.
+
+        Side Effect:
+            (1) The `is_up` state would be set to false.
+            (2) The lock table will be cleared.
+
+        @author Yuejiang Wu
+        """
         self.is_up = False
         self.fail_timestamp.append(timestamp)
         for lock_manager in self.lock_table.values():
@@ -227,6 +286,8 @@ class DataManager:
         """
         Record the recover timestamp, and set
         all the replicated variable's state to unreadable.
+
+        @author Yuejiang Wu
         """
         self.is_up = True
         self.recover_timestamp.append(timestamp)
@@ -235,6 +296,10 @@ class DataManager:
                 v.is_readable = False
 
     def generate_blocking_graph(self) -> defaultdict:
+        """Generate blocking graph for the current site.
+
+        @author Yuejiang Wu
+        """
         blocking_graph = defaultdict(set)
         for lock_manager in self.lock_table.values():
             if not lock_manager.current_lock or len(lock_manager.lock_queue) == 0:

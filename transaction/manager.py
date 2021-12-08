@@ -19,6 +19,18 @@ class TransactionManager:
             self.sites.append(DataManager(i))
 
     def process(self, s):
+        """The main processing flow.
+
+        The flow can be described as:
+        (1) Parse the input command.
+        (2) Check if there is a deadlock. If so, solve the deadlock and try
+            to execute the operations that are waiting in queue again.
+        (3) Process the specific command and print necessary information.
+        (4) Try to execute the operations.
+        (5) Increase the timestamp.
+
+        @author Yuejiang Wu
+        """
         arguments = self.parser.parse(s)
         if not arguments:
             return
@@ -32,6 +44,10 @@ class TransactionManager:
         print()
 
     def process_command(self, arguments: List[str]) -> None:
+        """Execute different functions according to the given command.
+
+        @author Yujie Fan
+        """
         cmd = arguments[0]
 
         if cmd == 'begin':
@@ -72,6 +88,13 @@ class TransactionManager:
             self.recover(arguments)
 
     def execute_operations(self):
+        """Try to execute all the operations in queue.
+
+        Side Effect:
+            If certain operation is executed successfully, then remove it from queue.
+
+        @author Yujie Fan
+        """
         for operation in list(self.operations):
             tid = operation.tid
             vid = operation.vid
@@ -85,6 +108,14 @@ class TransactionManager:
                 self.operations.remove(operation)
 
     def begin(self, arguments):
+        """Initialize a transaction in the transaction manager.
+
+        Side Effect:
+            A normal transaction object will be created in the transaction table,
+            whose key is the corresponding transaction id.
+
+        @author Yujie Fan
+        """
         tid = arguments[1]
         if tid in self.transactions:
             raise TransactionError("{} has already begun.".format(tid))
@@ -93,6 +124,14 @@ class TransactionManager:
         print('Transaction {} begins'.format(tid))
 
     def begin_ro(self, arguments):
+        """Initialize a read-only transaction in the transaction manager.
+
+        Side Effect:
+            A read-only transaction object will be created in the transaction table,
+            whose key is the corresponding transaction id.
+
+        @author Yujie Fan
+        """
         tid = arguments[1]
         if tid in self.transactions:
             raise TransactionError("{} has already begun.".format(tid))
@@ -101,6 +140,10 @@ class TransactionManager:
         print('Read-only transaction {} begins'.format(tid))
 
     def end(self, arguments):
+        """Decide whether to commit or abort the given transaction.
+
+        @author Yujie Fan
+        """
         tid = arguments[1]
         trans: Transaction = self.transactions.get(tid)
         if not trans:
@@ -111,6 +154,10 @@ class TransactionManager:
             self.commit(tid, self.timestamp)
 
     def snapshot_read(self, tid, vid):
+        """Give the read-only transaction a snapshot value (if possible).
+
+        @author Yujie Fan
+        """
         trans: Transaction = self.transactions.get(tid)
         if not trans:
             raise TransactionError("Transaction {} doesn't exist.".format(tid))
@@ -126,18 +173,36 @@ class TransactionManager:
         return False
 
     def add_read_operation(self, tid, vid):
+        """Add a read operation to queue.
+
+        Side Effect:
+            A normal read operation object will be appended to the queue.
+
+        @author Yujie Fan
+        """
         trans = self.transactions.get(tid)
         if not trans:
             raise TransactionError("Transaction {} doesn't exist, can't add read operation.".format(tid))
         self.operations.append(ReadOperation(tid, vid))
 
     def add_write_operation(self, tid, vid, value):
+        """Add a write operation to queue.
+
+        Side Effect:
+            A write operation object will be appended to the queue.
+
+        @author Yujie Fan
+        """
         trans = self.transactions.get(tid)
         if not trans:
             raise TransactionError("Transaction {} doesn't exist, can't add write operation.".format(tid))
         self.operations.append(WriteOperation(tid, vid, value))
 
     def read(self, tid, vid):
+        """Execute the read operation of normal transactions(not read-only).
+
+        @author Yujie Fan
+        """
         trans: Transaction = self.transactions.get(tid)
         if not trans:
             raise TransactionError("Transaction {} hasn't begun, read operation fails.".format(tid))
@@ -150,6 +215,10 @@ class TransactionManager:
         return False
 
     def write(self, tid, vid, value) -> bool:
+        """Execute the write operation.
+
+        @author Yuejiang Wu
+        """
         trans = self.transactions.get(tid)
         if not trans:
             raise TransactionError("Transaction {} doesn't exist, write operation fails.".format(tid))
@@ -177,11 +246,19 @@ class TransactionManager:
         return True
 
     def dump(self):
+        """Show the data of all sites.
+
+        @author Yujie Fan
+        """
         print("Dump all sites:")
         for site in self.sites:
             site.dump()
 
     def fail(self, arguments):
+        """Fail a site explicitly.
+
+        @author Yujie Fan
+        """
         sid = int(arguments[1])
         # site id starts from 1, while the index of self.sites starts from 0.
         site = self.sites[sid - 1]
@@ -196,6 +273,10 @@ class TransactionManager:
                 trans.is_abort = True
 
     def recover(self, arguments):
+        """Recover a site explicitly.
+
+        @author Yujie Fan
+        """
         sid = int(arguments[1])
         site = self.sites[sid - 1]
         if site.is_up:
@@ -205,6 +286,10 @@ class TransactionManager:
         print("Site {} recovers.".format(sid))
 
     def abort(self, tid: str, site_fail=False):
+        """Abort a transaction.
+
+        @author Yujie Fan
+        """
         for site in self.sites:
             site.abort(tid)
         del self.transactions[tid]
@@ -216,12 +301,20 @@ class TransactionManager:
                 self.operations.remove(operation)
 
     def commit(self, tid, commit_time):
+        """Commit a transaction, and output its commit time.
+
+        @author Yujie Fan
+        """
         for site in self.sites:
             site.commit(tid, commit_time)
         self.transactions.pop(tid)
         print("{} commits at time {}.".format(tid, commit_time))
 
     def detect_deadlock(self) -> bool:
+        """Detect if there is a deadlock among existing transactions.
+
+        @author Yujie Fan
+        """
         blocking_graph = generate_blocking_graph(self.sites)
         victim = detect(self.transactions, blocking_graph)
         if victim is not None:
