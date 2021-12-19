@@ -3,12 +3,14 @@
 This is the final project of NYU's Advanced Database Systems Course (CSCI-GA.2434-001), whose full name
 is `Replicated Concurrency Control and Recovery`.
 
-## Team members
+## What
 
-* Yuejiang Wu, yw5027
-* Yujie Fan, yf2173
+This project is aim to implement a simple **distributed database model**, complete with **multi-version concurrency
+control**
+, **deadlock detection**, **replication**, and **failure recovery**.
 
-## How to run directly
+
+## How to run
 
 1. Please make sure that you have `Python 3.6+` installed.
 2. To get input from file, use the following command:
@@ -93,12 +95,6 @@ is `Replicated Concurrency Control and Recovery`.
    
     The most important thing is, be sure to give one and only one right argument when using the program.
 
-## What
-
-This project is aim to implement a simple **distributed database model**, complete with **multi-version concurrency
-control**
-, **deadlock detection**, **replication**, and **failure recovery**.
-
 ## Data
 
 * Data consists of 20 distinct variables (from `x1` to `x20`)
@@ -115,18 +111,18 @@ control**
 * Validation at commit time.
 * A transaction may read a variable and later write that same variable as well as others, use lock promotion.
 * Available copies allows writes and commits to just the available sites.
-* Each variable locks are acquired in a FCFS fashion.
+* Each variable locks are acquired in a `FCFS` fashion.
 * Use serialization graph when getting R/W locks.
 * Use cycle detection to deal with deadlocks, abort the youngest transaction in the cycle (The system must keep track of
   the transaction time of any transaction holding a lock).
 * Deadlock detection uses cycle detection and will abort the youngest transaction in the cycle. It need not happen at
   every tick, but when it does, it should happen at the beginning of the tick.
-* read-only transactions should use multiversion read consistency.
+* read-only transactions should use multi-version read consistency.
     * If `xi` is not replicated and the site holding xi is up, then the read-only transaction can read it.
-    * If `x_i` if replicated then RO can read `xi` from site s if `si` was committed at s by some transaction T before
-      RO began, and s was up all the time between the time when `xi` was commited and RO began.
+    * If `xi` is replicated then RO can read `xi` from site `s` if `si` was committed at `s` by some transaction T before
+      RO began, and `s` was up all the time between the time when `xi` was committed and RO began.
     * To implement these, for every version of `xi`, on each site s, record when that version was committed. The
-      transaction manager will record the filure history of every site.
+      transaction manager will record the failure history of every site.
 
 ## Test Specification
 
@@ -134,11 +130,11 @@ control**
 * output goes to standard out
 * If an operation for T1 is waiting for a lock held by T2, then when T2 commits, the operation for T1 proceeds if there
   is no other lock request ahead of it.
-* Lock acquisition is FCFS but several transactions may hold read locks on the same item(share read locks). For example:
+* Lock acquisition is `FCFS` but several transactions may hold read locks on the same item(share read locks). For example:
     * If `x` is currently read-locked by `T1` and there is no waiting list and `T2` requests a read lock on `x`,
       then `T2` can get it.
     * If `x` is read-locked by `T1` and `T3` is waiting for a write lock on `x` and `T2` subsequently requests a read
-      lock on `x`, then `T2` must wait for `T3` either to be aobrted or to complete its possesion of `x`.
+      lock on `x`, then `T2` must wait for `T3` either to be aborted or to complete its possession of `x`.
 * W(T1, x6, v) means that transaction `T1` wants to write all available copies of `x6` with the value `v`, and it can
   happen only when `T1` has locks on all sites that are up and that contain `x6`. If `T1` can only get some locks but
   not all, then `T1` should release those locks finally.
@@ -152,7 +148,7 @@ control**
 * end(T1): The system should report whether T1 can commit in the format `T1 commits` or `T1 aborts`
 * When a transaction commits, the name of the transaction should be printed.
 * When a transaction aborts, the name of the transaction should be printed.
-* Which sites are affected by a write.
-* Every tiem a transaction waits because of a lock conflict
-* Every time a transaction waits because a site is down
+* When sites are affected by a `write` transaction, the site's name should be printed.
+* Every time a transaction waits because of a lock conflict, the transaction's name and the reason should be printed.
+* Every time a transaction waits because a site is down, the transaction's name and the reason should be printed.
 			  
