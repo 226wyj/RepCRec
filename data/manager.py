@@ -45,8 +45,6 @@ class DataManager:
 
     def snapshot_read(self, vid: str, timestamp: int) -> ResultValue:
         """Return the snapshot value for read-only transactions.
-
-        @author Yuejiang Wu
         """
         v: Variable = self.data[vid]
         if not v.is_readable:
@@ -66,8 +64,6 @@ class DataManager:
 
     def read(self, tid: str, vid: str) -> ResultValue:
         """Return the value for normally-read transactions.
-
-        @author Yuejiang Wu
         """
         v: Variable = self.data[vid]
         if not v.is_readable:
@@ -115,8 +111,6 @@ class DataManager:
         """
         To judge whether a transaction can get the write
         lock of the certain variable.
-
-        @author Yuejiang Wu
         """
         lock_manager: LockManager = self.lock_table.get(vid)
         current_lock = lock_manager.current_lock
@@ -162,8 +156,6 @@ class DataManager:
 
         This method will only be called after getting the write lock successfully,
         so there are no extra checking steps.
-
-        @author Yuejiang Wu
         """
         lock_manager: LockManager = self.lock_table.get(vid)
         v: Variable = self.data.get(vid)
@@ -188,8 +180,6 @@ class DataManager:
 
     def dump(self):
         """Show all the variables in the site.
-
-        @author Yuejiang Wu
         """
         site_status = 'up' if self.is_up else 'down'
         output = 'site {} [{}] - '.format(self.sid, site_status)
@@ -204,8 +194,6 @@ class DataManager:
             (1) All the locks that required by this transaction will be released.
             (2) All the operations of this transaction that are waiting in queue
                 will be dropped.
-
-        @author Yuejiang Wu
         """
         for lock_manager in self.lock_table.values():
             lock_manager.release_current_lock(tid)
@@ -219,8 +207,6 @@ class DataManager:
             (1) If the transaction writes temporary value on the site,
                 then save it as the commit value.
             (2) Release all the locks that are required by the transaction.
-
-        @author Yuejiang Wu
         """
         # Release locks.
         for lock_manager in self.lock_table.values():
@@ -243,8 +229,6 @@ class DataManager:
         to the First-Come-First-Serve protocol. If this lock is a read lock, then
         its followed read locks will share the same read lock until there is a
         write lock
-
-        @author Yuejiang Wu
         """
         for lock_manager in [x for x in self.lock_table.values() if not x.current_lock]:
             if len(lock_manager.lock_queue) == 0:
@@ -274,8 +258,6 @@ class DataManager:
         Side Effect:
             (1) The `is_up` state would be set to false.
             (2) The lock table will be cleared.
-
-        @author Yuejiang Wu
         """
         self.is_up = False
         self.fail_timestamp.append(timestamp)
@@ -286,8 +268,6 @@ class DataManager:
         """
         Record the recover timestamp, and set
         all the replicated variable's state to unreadable.
-
-        @author Yuejiang Wu
         """
         self.is_up = True
         self.recover_timestamp.append(timestamp)
@@ -297,8 +277,6 @@ class DataManager:
 
     def generate_blocking_graph(self) -> defaultdict:
         """Generate blocking graph for the current site.
-
-        @author Yuejiang Wu
         """
         blocking_graph = defaultdict(set)
         for lock_manager in self.lock_table.values():

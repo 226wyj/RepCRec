@@ -6,8 +6,6 @@ from transaction.manager import TransactionManager
 
 def main(arguments):
     """Main function, used for getting inputs.
-
-    @author Yuejiang Wu
     """
     if arguments.file and not (arguments.std or arguments.dir):
         while True:

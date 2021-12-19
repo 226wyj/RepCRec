@@ -28,8 +28,6 @@ class TransactionManager:
         (3) Process the specific command and print necessary information.
         (4) Try to execute the operations.
         (5) Increase the timestamp.
-
-        @author Yuejiang Wu
         """
         arguments = self.parser.parse(s)
         if not arguments:
@@ -45,8 +43,6 @@ class TransactionManager:
 
     def process_command(self, arguments: List[str]) -> None:
         """Execute different functions according to the given command.
-
-        @author Yujie Fan
         """
         cmd = arguments[0]
 
@@ -92,8 +88,6 @@ class TransactionManager:
 
         Side Effect:
             If certain operation is executed successfully, then remove it from queue.
-
-        @author Yujie Fan
         """
         for operation in list(self.operations):
             tid = operation.tid
@@ -113,8 +107,6 @@ class TransactionManager:
         Side Effect:
             A normal transaction object will be created in the transaction table,
             whose key is the corresponding transaction id.
-
-        @author Yujie Fan
         """
         tid = arguments[1]
         if tid in self.transactions:
@@ -129,8 +121,6 @@ class TransactionManager:
         Side Effect:
             A read-only transaction object will be created in the transaction table,
             whose key is the corresponding transaction id.
-
-        @author Yujie Fan
         """
         tid = arguments[1]
         if tid in self.transactions:
@@ -141,8 +131,6 @@ class TransactionManager:
 
     def end(self, arguments):
         """Decide whether to commit or abort the given transaction.
-
-        @author Yujie Fan
         """
         tid = arguments[1]
         trans: Transaction = self.transactions.get(tid)
@@ -155,8 +143,6 @@ class TransactionManager:
 
     def snapshot_read(self, tid, vid):
         """Give the read-only transaction a snapshot value (if possible).
-
-        @author Yujie Fan
         """
         trans: Transaction = self.transactions.get(tid)
         if not trans:
@@ -177,8 +163,6 @@ class TransactionManager:
 
         Side Effect:
             A normal read operation object will be appended to the queue.
-
-        @author Yujie Fan
         """
         trans = self.transactions.get(tid)
         if not trans:
@@ -190,8 +174,6 @@ class TransactionManager:
 
         Side Effect:
             A write operation object will be appended to the queue.
-
-        @author Yujie Fan
         """
         trans = self.transactions.get(tid)
         if not trans:
@@ -200,8 +182,6 @@ class TransactionManager:
 
     def read(self, tid, vid):
         """Execute the read operation of normal transactions(not read-only).
-
-        @author Yujie Fan
         """
         trans: Transaction = self.transactions.get(tid)
         if not trans:
@@ -216,8 +196,6 @@ class TransactionManager:
 
     def write(self, tid, vid, value) -> bool:
         """Execute the write operation.
-
-        @author Yuejiang Wu
         """
         trans = self.transactions.get(tid)
         if not trans:
@@ -247,8 +225,6 @@ class TransactionManager:
 
     def dump(self):
         """Show the data of all sites.
-
-        @author Yujie Fan
         """
         print("Dump all sites:")
         for site in self.sites:
@@ -256,8 +232,6 @@ class TransactionManager:
 
     def fail(self, arguments):
         """Fail a site explicitly.
-
-        @author Yujie Fan
         """
         sid = int(arguments[1])
         # site id starts from 1, while the index of self.sites starts from 0.
@@ -274,8 +248,6 @@ class TransactionManager:
 
     def recover(self, arguments):
         """Recover a site explicitly.
-
-        @author Yujie Fan
         """
         sid = int(arguments[1])
         site = self.sites[sid - 1]
@@ -287,8 +259,6 @@ class TransactionManager:
 
     def abort(self, tid: str, site_fail=False):
         """Abort a transaction.
-
-        @author Yujie Fan
         """
         for site in self.sites:
             site.abort(tid)
@@ -302,8 +272,6 @@ class TransactionManager:
 
     def commit(self, tid, commit_time):
         """Commit a transaction, and output its commit time.
-
-        @author Yujie Fan
         """
         for site in self.sites:
             site.commit(tid, commit_time)
@@ -312,8 +280,6 @@ class TransactionManager:
 
     def detect_deadlock(self) -> bool:
         """Detect if there is a deadlock among existing transactions.
-
-        @author Yujie Fan
         """
         blocking_graph = generate_blocking_graph(self.sites)
         victim = detect(self.transactions, blocking_graph)

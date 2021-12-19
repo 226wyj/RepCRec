@@ -17,8 +17,6 @@ class Parser:
         According to the format of the test files, the parser should
         also identify the comments and annotations. The `//` and the `===`
         should be the identifiers.
-
-        @author Yujie Fan
         """
         if self.is_hint:
             return

@@ -44,8 +44,6 @@ class LockManager:
 
     def promote_current_lock(self, write_lock: WriteLock) -> None:
         """Promote the current read lock to write lock if possible.
-
-        @author Yujie Fan
         """
         if not self.current_lock:
             raise LockError("ERROR[0]: No lock on variable {}.".format(self.vid))
@@ -66,8 +64,6 @@ class LockManager:
         """
         Clear the lock manager's message, is used when a site wants to
         clear its lock table.
-
-        @author Yujie Fan
         """
         self.current_lock = None
         self.lock_queue.clear()
@@ -75,8 +71,6 @@ class LockManager:
 
     def share_current_lock(self, tid: str):
         """Share the current read lock with other transactions if possible.
-
-        @author Yujie Fan
         """
         if self.current_lock.lock_type == LockType.R and tid not in self.shared_read_lock:
             self.shared_read_lock.append(tid)
@@ -88,8 +82,6 @@ class LockManager:
 
     def release_current_lock(self, tid: str) -> None:
         """Release current lock, and update shared lock lists if needed.
-
-        @author Yuejiang Wu
         """
         if self.current_lock:
             if self.current_lock.lock_type == LockType.R:
@@ -103,8 +95,6 @@ class LockManager:
 
     def add_lock_to_queue(self, lock) -> None:
         """Only blocked locks are added to the queue.
-
-        @author Yuejiang Wu
         """
         for waited_lock in self.lock_queue:
             if waited_lock.tid == lock.tid:
@@ -114,8 +104,6 @@ class LockManager:
 
     def remove_lock_from_queue(self, tid) -> None:
         """Remove all the lock whose tid is equal to the given tid.
-
-        @author Yujie Fan
         """
         self.lock_queue = deque([lock for lock in self.lock_queue if lock.tid != tid])
 
@@ -126,8 +114,6 @@ class LockManager:
 
     def has_write_lock(self):
         """Check if there is a write lock waiting in queue.
-
-        @author Yujie Fan
         """
         for lock in self.lock_queue:
             if lock.lock_type == LockType.W:
@@ -138,8 +124,6 @@ class LockManager:
         """
         Check if there is a write lock waiting in queue apart from
         that of the same transaction.
-
-        @author Yujie Fan
         """
         for lock in self.lock_queue:
             if lock.lock_type == LockType.W:
@@ -156,8 +140,6 @@ def is_conflict(lock1, lock2) -> bool:
         (2) W lock conflicts with R lock and W lock.
 
     Besides, It is guaranteed that a lock won't be conflicted with itself.
-
-    @author Yuejiang Wu
     """
     if lock1.lock_type == LockType.R and lock2.lock_type == LockType.R:
         return False
